@@ -2228,6 +2228,8 @@
                     <option value="run">🏃 Bieganie (km)</option>
                     <option value="bike">🚴 Rower (km)</option>
                     <option value="combat">🥊 Sporty Walki (rundy 3 min)</option>
+                    <option value="team_sports">⚽ Sporty Zespołowe (minuty)</option>
+                    <option value="racket_sports">🎾 Sporty Rakietowe &amp; Inne (minuty)</option>
                     <option value="skills">🧘 Skille / OUN (holdy / próby)</option>
                     <option value="hiit">🔥 HIIT / Interwały (minuty)</option>
                     <option value="custom">⚡ Własna aktywność</option>
@@ -7498,6 +7500,51 @@
     window.addEventListener('DOMContentLoaded', () => {
       applyActivityPreset(document.getElementById('manualActivityPreset')?.value || 'gym');
     });
+    // =========================================================================
+    // 10H. PRESETY: SPORTY ZESPOŁOWE ORAZ RAKIETOWE & INNE
+    // =========================================================================
+    ACTIVITY_PRESETS.team_sports = {
+      name: '⚽ Sporty Zespołowe',
+      type: 'Hybryda',
+      unit: 'minut',
+      defaultVol: 60,
+      quick: [30, 45, 60, 90, 120, 150],
+      plPerUnit: 1.85,
+      xpPerUnit: 5.0,
+      weights: { STR: 0.12, AGI: 0.30, END: 0.30, CNS: 0.14, SPI: 0.14 }
+    };
+
+    ACTIVITY_PRESETS.racket_sports = {
+      name: '🎾 Sporty Rakietowe & Inne',
+      type: 'Hybryda',
+      unit: 'minut',
+      defaultVol: 60,
+      quick: [30, 45, 60, 90, 120],
+      plPerUnit: 1.80,
+      xpPerUnit: 4.8,
+      weights: { STR: 0.14, AGI: 0.30, END: 0.24, CNS: 0.20, SPI: 0.12 }
+    };
+
+    EXERCISE_TYPES_BY_PRESET.team_sports = [
+      { id: 'ts_volley', label: '🏐 Siatkówka', mult: 1.15, focus: 'AGI' },
+      { id: 'ts_beach', label: '🏖️ Siatkówka plażowa', mult: 1.28, focus: 'END' },
+      { id: 'ts_foot', label: '⚽ Piłka nożna', mult: 1.22, focus: 'END' },
+      { id: 'ts_futsal', label: '🏟️ Futsal / Orlik', mult: 1.25, focus: 'AGI' },
+      { id: 'ts_basket', label: '🏀 Koszykówka', mult: 1.20, focus: 'AGI' },
+      { id: 'ts_hand', label: '🤾 Piłka ręczna', mult: 1.22, focus: 'STR' },
+      { id: 'ts_hockey', label: '🏑 Unihokej / Hokej', mult: 1.24, focus: 'CNS' },
+      { id: 'ts_match', label: '🏆 Mecz / Turniej', mult: 1.32, focus: 'SPI' }
+    ];
+
+    EXERCISE_TYPES_BY_PRESET.racket_sports = [
+      { id: 'rs_tennis', label: '🎾 Tenis ziemny', mult: 1.18, focus: 'AGI' },
+      { id: 'rs_padel', label: '🥎 Padel', mult: 1.12, focus: 'AGI' },
+      { id: 'rs_badm', label: '🏸 Badminton', mult: 1.15, focus: 'CNS' },
+      { id: 'rs_squash', label: '🔥 Squash', mult: 1.30, focus: 'END' },
+      { id: 'rs_ping', label: '🏓 Tenis stołowy', mult: 0.95, focus: 'CNS' },
+      { id: 'rs_climb', label: '🧗 Wspinaczka / Boulder', mult: 1.30, focus: 'STR' },
+      { id: 'rs_skate', label: '🛼 Rolki / Łyżwy', mult: 1.08, focus: 'END' }
+    ];
   </script>
 </body>
 
