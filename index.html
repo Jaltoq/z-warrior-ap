@@ -1592,6 +1592,110 @@
         font-size: 1.9rem;
       }
     }
+
+    /* =========================================================================
+       9. ZAKŁADKA WYKRESY PROGRESU (SVG SCOUTER HUD + HEATMAP)
+       ========================================================================= */
+    .chart-svg-wrap {
+      width: 100%;
+      background: var(--bg-card-deep);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 10px;
+      overflow: hidden;
+    }
+
+    .chart-svg-wrap svg {
+      width: 100%;
+      height: auto;
+      display: block;
+    }
+
+    .chart-inspect-bar {
+      margin-top: 8px;
+      padding: 8px 11px;
+      border-radius: var(--radius-sm);
+      background: #070b14;
+      border: 1px solid var(--border);
+      font-family: var(--font-mono);
+      font-size: 0.74rem;
+      color: var(--text-secondary);
+      min-height: 36px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .chart-pill-group {
+      display: inline-flex;
+      gap: 5px;
+      flex-wrap: wrap;
+    }
+
+    .chart-dot-btn {
+      cursor: pointer;
+      transition: r 0.15s ease, opacity 0.15s ease;
+    }
+
+    .chart-dot-btn:hover {
+      opacity: 0.85;
+    }
+
+    /* Mapa aktywności 12 tygodni (Heatmap) */
+    .heatmap-scroll {
+      overflow-x: auto;
+      padding-bottom: 4px;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .heatmap-grid {
+      display: grid;
+      grid-template-rows: repeat(7, 16px);
+      grid-auto-flow: column;
+      grid-auto-columns: 16px;
+      gap: 4px;
+      width: max-content;
+    }
+
+    .hm-cell {
+      width: 16px;
+      height: 16px;
+      border-radius: 4px;
+      border: 1px solid #1e293b;
+      background: #0b101d;
+      cursor: pointer;
+      padding: 0;
+      transition: transform 0.12s ease, border-color 0.12s ease;
+    }
+
+    .hm-cell:hover {
+      transform: scale(1.18);
+      border-color: #fff;
+    }
+
+    .hm-l1 {
+      background: rgba(255, 107, 0, 0.30);
+      border-color: rgba(255, 107, 0, 0.50);
+    }
+
+    .hm-l2 {
+      background: rgba(255, 107, 0, 0.58);
+      border-color: rgba(255, 140, 36, 0.72);
+    }
+
+    .hm-l3 {
+      background: #ff6b00;
+      border-color: #ff8c24;
+      box-shadow: 0 0 8px rgba(255, 107, 0, 0.45);
+    }
+
+    .hm-l4 {
+      background: #facc15;
+      border-color: #fef08a;
+      box-shadow: 0 0 10px rgba(250, 204, 21, 0.65);
+    }
   </style>
 </head>
 
@@ -1638,6 +1742,7 @@
         <button type="button" class="nav-tab" data-tab="strength" onclick="switchTab('strength')">🏋️ Siła &amp;
           PR</button>
         <button type="button" class="nav-tab" data-tab="balls" onclick="switchTab('balls')">🐉 Smocze Kule</button>
+        <button type="button" class="nav-tab" data-tab="charts" onclick="switchTab('charts')">📈 Wykresy</button>
       </nav>
     </div>
   </div>
@@ -2247,6 +2352,141 @@
           <span id="sagasCompletedBadge" class="badge badge-gold">SAGI: 0</span>
         </div>
         <div id="shenronHistoryList" class="stack"></div>
+      </div>
+    </section>
+    <!-- =====================================================================
+         ZAKŁADKA 8: ANALIZA & WYKRESY PROGRESU
+         ===================================================================== -->
+    <section id="tab-charts" class="tab-panel">
+      <div class="grid-2" style="margin-bottom:16px;">
+        <!-- 1. Radar 5 Statystyk vs Następna Transformacja -->
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <div class="card-title">🕸️ Radar 5 Statystyk vs Transformacja</div>
+              <div class="card-sub">Twój profil mocy nałożony na próg kolejnej zablokowanej rangi.</div>
+            </div>
+            <span id="chartRadarTargetBadge" class="badge badge-gold">CEL</span>
+          </div>
+          <div id="chartRadarWrap" class="chart-svg-wrap"></div>
+          <div id="chartRadarLegend" class="chart-inspect-bar"></div>
+        </div>
+
+        <!-- 2. Krzywa Power Levela w czasie -->
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <div class="card-title">📈 Krzywa Power Levela (Scouter)</div>
+              <div class="card-sub">Przyrost mocy w czasie — kliknij punkt, aby sprawdzić sesję.</div>
+            </div>
+            <div class="chart-pill-group">
+              <button type="button" class="btn btn-xs" data-pl-range="7" onclick="setPlChartRange(7)">7 dni</button>
+              <button type="button" class="btn btn-xs btn-orange" data-pl-range="30" onclick="setPlChartRange(30)">30
+                dni</button>
+              <button type="button" class="btn btn-xs" data-pl-range="90" onclick="setPlChartRange(90)">90 dni</button>
+              <button type="button" class="btn btn-xs" data-pl-range="all"
+                onclick="setPlChartRange('all')">Wszystko</button>
+            </div>
+          </div>
+          <div id="chartPlWrap" class="chart-svg-wrap"></div>
+          <div id="chartPlInspect" class="chart-inspect-bar">Kliknij punkt na wykresie, aby podejrzeć szczegóły dnia.
+          </div>
+        </div>
+      </div>
+
+      <!-- 3. Gotowość OUN vs Intensywność RPE -->
+      <div class="card" style="margin-bottom:16px;">
+        <div class="card-header">
+          <div>
+            <div class="card-title">🧠 Gotowość OUN (%) vs Intensywność RPE</div>
+            <div class="card-sub">Cyjanowa linia = świeżość układu nerwowego (OUN), pomarańczowe słupki = intensywność
+              RPE z treningów.</div>
+          </div>
+          <div class="chart-pill-group">
+            <button type="button" class="btn btn-xs btn-cyan" data-oun-range="14" onclick="setOunChartRange(14)">14
+              dni</button>
+            <button type="button" class="btn btn-xs" data-oun-range="30" onclick="setOunChartRange(30)">30 dni</button>
+          </div>
+        </div>
+        <div id="chartOunWrap" class="chart-svg-wrap"></div>
+        <div id="chartOunInspect" class="chart-inspect-bar">Kliknij dzień na wykresie, aby sprawdzić relację OUN i RPE.
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <!-- 4. Mapa Aktywności (12 tygodni) + Podział XP wg aktywności -->
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <div class="card-title">🔥 Mapa Aktywności (12 tygodni) &amp; Objętość</div>
+              <div class="card-sub">Im jaśniejszy kwadrat, tym wyższe zdobyte +PL danego dnia.</div>
+            </div>
+            <span id="chartHeatmapSummary" class="badge badge-orange">0 DNI AKTYWNYCH</span>
+          </div>
+          <div class="card-deep" style="margin-bottom:10px;">
+            <div id="chartHeatmapWrap" class="heatmap-scroll"></div>
+            <div
+              style="display:flex; justify-content:space-between; align-items:center; margin-top:8px; font-family:var(--font-mono); font-size:0.68rem; color:var(--text-dim);">
+              <span>12 tyg. temu</span>
+              <span style="display:inline-flex; align-items:center; gap:4px;">
+                Mniej
+                <span class="hm-cell" style="display:inline-block; cursor:default;"></span>
+                <span class="hm-cell hm-l1" style="display:inline-block; cursor:default;"></span>
+                <span class="hm-cell hm-l2" style="display:inline-block; cursor:default;"></span>
+                <span class="hm-cell hm-l3" style="display:inline-block; cursor:default;"></span>
+                <span class="hm-cell hm-l4" style="display:inline-block; cursor:default;"></span>
+                Więcej (S+)
+              </span>
+              <span>Dziś</span>
+            </div>
+          </div>
+          <div id="chartHeatmapInspect" class="chart-inspect-bar" style="margin-bottom:12px;">Kliknij dowolny kwadrat,
+            aby zobaczyć bilans dnia.</div>
+
+          <div
+            style="font-family:var(--font-mono); font-size:0.72rem; font-weight:800; color:var(--text-muted); margin-bottom:8px;">
+            PODZIAŁ ZDOBYTEGO +PL WG RODZAJU AKTYWNOŚCI</div>
+          <div id="chartActivityBars" class="stack" style="gap:8px;"></div>
+        </div>
+
+        <!-- 5. Progres 1RM i Siły Względnej (× BW) -->
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <div class="card-title">🏋️ Progres 1RM &amp; Siła Względna</div>
+              <div class="card-sub">Każda kalibracja Scoutera i nowy PR z Kalkulatora Epleya automatycznie dodaje punkt.
+              </div>
+            </div>
+            <span id="chartPrDeltaBadge" class="badge badge-green">BIEŻĄCY</span>
+          </div>
+
+          <div class="row-2" style="margin-bottom:10px;">
+            <div>
+              <label class="form-label" for="chartPrLiftSelect">Wybierz bój</label>
+              <select id="chartPrLiftSelect" class="select" onchange="renderPrProgressChart()">
+                <option value="weightedPullups">⭐ Podciąganie +kg</option>
+                <option value="weightedDips">⭐ Dipy +kg</option>
+                <option value="squat">Przysiad ze sztangą</option>
+                <option value="bench">Wyciskanie leżąc</option>
+                <option value="deadlift">Martwy ciąg</option>
+                <option value="ohp">Wyciskanie OHP</option>
+              </select>
+            </div>
+            <div>
+              <label class="form-label">Tryb wykresu</label>
+              <div style="display:flex; gap:6px;">
+                <button type="button" id="prModeKgBtn" class="btn btn-sm btn-orange" style="flex:1;"
+                  onclick="setPrChartMode('kg')">Ciężar (kg)</button>
+                <button type="button" id="prModeBwBtn" class="btn btn-sm" style="flex:1;"
+                  onclick="setPrChartMode('bw')">Siła (× BW)</button>
+              </div>
+            </div>
+          </div>
+
+          <div id="chartPrWrap" class="chart-svg-wrap"></div>
+          <div id="chartPrInspect" class="chart-inspect-bar">Kliknij punkt na wykresie, aby sprawdzić datę i wynik.
+          </div>
+        </div>
       </div>
     </section>
   </main>
@@ -5652,6 +5892,632 @@
       const currentPreset = document.getElementById('manualActivityPreset')?.value || 'swim';
       toggleWeightBoxVisibility(currentPreset);
       updateManualRewardPreview();
+    });
+    // =========================================================================
+    // 10E. MODUŁ WYKRESÓW PROGRESU (5 WYKRESÓW SVG + HISTORIA 1RM)
+    // =========================================================================
+    let plChartRange = 30;
+    let ounChartRange = 14;
+    let prChartMode = 'kg';
+
+    function safeRewardForCharts(log) {
+      if (typeof getLogReward === 'function') return getLogReward(log);
+      return {
+        pl: 45,
+        totalXp: 120,
+        grade: 'B',
+        activityName: log?.type || 'Trening',
+        xp: { STR: 30, AGI: 20, END: 30, CNS: 20, SPI: 20 }
+      };
+    }
+
+    function localDayKey(dateInput) {
+      const d = dateInput instanceof Date ? dateInput : new Date(dateInput);
+      if (Number.isNaN(d.getTime())) return '';
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return `${y}-${m}-${day}`;
+    }
+
+    function shortPlDate(dayKey) {
+      const parts = String(dayKey || '').split('-');
+      return parts.length === 3 ? `${parts[2]}.${parts[1]}` : dayKey;
+    }
+
+    function ensurePrHistory() {
+      if (!Array.isArray(state.prHistory)) state.prHistory = [];
+      if (state.prHistory.length === 0 && state.records) {
+        state.prHistory.push({
+          isoDate: state.updatedAt || new Date().toISOString(),
+          dayKey: localDayKey(new Date()),
+          bw: Math.max(35, Number(state.records.bodyweight) || 75),
+          squat: Number(state.records.squat) || 0,
+          bench: Number(state.records.bench) || 0,
+          deadlift: Number(state.records.deadlift) || 0,
+          ohp: Number(state.records.ohp) || 0,
+          weightedPullups: Number(state.records.weightedPullups) || 0,
+          weightedDips: Number(state.records.weightedDips) || 0
+        });
+      }
+    }
+
+    function recordPrSnapshot() {
+      ensurePrHistory();
+      const now = new Date();
+      const dayKey = localDayKey(now);
+      const snap = {
+        isoDate: now.toISOString(),
+        dayKey,
+        bw: Math.max(35, Number(state.records.bodyweight) || 75),
+        squat: Number(state.records.squat) || 0,
+        bench: Number(state.records.bench) || 0,
+        deadlift: Number(state.records.deadlift) || 0,
+        ohp: Number(state.records.ohp) || 0,
+        weightedPullups: Number(state.records.weightedPullups) || 0,
+        weightedDips: Number(state.records.weightedDips) || 0
+      };
+      const last = state.prHistory[state.prHistory.length - 1];
+      if (last && last.dayKey === dayKey) {
+        state.prHistory[state.prHistory.length - 1] = snap;
+      } else {
+        state.prHistory.push(snap);
+      }
+      if (state.prHistory.length > 120) state.prHistory = state.prHistory.slice(-120);
+    }
+
+    // Przełączniki filtrów wykresów
+    function setPlChartRange(range) {
+      plChartRange = range;
+      document.querySelectorAll('[data-pl-range]').forEach(btn => {
+        btn.classList.toggle('btn-orange', String(btn.dataset.plRange) === String(range));
+      });
+      renderPlChart(getFullEvaluation());
+    }
+
+    function setOunChartRange(days) {
+      ounChartRange = days;
+      document.querySelectorAll('[data-oun-range]').forEach(btn => {
+        btn.classList.toggle('btn-cyan', Number(btn.dataset.ounRange) === Number(days));
+      });
+      renderOunVsRpeChart();
+    }
+
+    function setPrChartMode(mode) {
+      prChartMode = mode;
+      document.getElementById('prModeKgBtn')?.classList.toggle('btn-orange', mode === 'kg');
+      document.getElementById('prModeBwBtn')?.classList.toggle('btn-orange', mode === 'bw');
+      renderPrProgressChart();
+    }
+
+    // -------------------------------------------------------------------------
+    // WYKRES 1: RADAR 5 STATYSTYK VS PRÓG NASTĘPNEJ TRANSFORMACJI
+    // -------------------------------------------------------------------------
+    function renderRadarChart(ev) {
+      const wrap = document.getElementById('chartRadarWrap');
+      const badge = document.getElementById('chartRadarTargetBadge');
+      const legend = document.getElementById('chartRadarLegend');
+      if (!wrap) return;
+
+      const target = ev.nextLocked || TRANSFORMATIONS[TRANSFORMATIONS.length - 1];
+      if (badge) badge.textContent = ev.nextLocked ? `CEL: ${target.icon} ${target.short}` : '🌌 MAX: UI';
+
+      const cx = 180, cy = 152, R = 104;
+      const currVals = STAT_KEYS.map(k => ev.stats[k].lvl);
+      const reqVals = STAT_KEYS.map(k => target.req[k] || 0);
+      const maxScale = Math.max(10, ...currVals, ...reqVals) * 1.12;
+
+      const pt = (idx, ratio) => {
+        const angle = -Math.PI / 2 + (idx * 2 * Math.PI) / 5;
+        return [cx + Math.cos(angle) * R * ratio, cy + Math.sin(angle) * R * ratio];
+      };
+
+      const ringPolys = [0.25, 0.5, 0.75, 1].map(r => {
+        const pts = STAT_KEYS.map((_, i) => pt(i, r).map(n => n.toFixed(1)).join(',')).join(' ');
+        return `<polygon points="${pts}" fill="none" stroke="#1e293b" stroke-width="1" />`;
+      }).join('');
+
+      const axisLines = STAT_KEYS.map((_, i) => {
+        const [x, y] = pt(i, 1);
+        return `<line x1="${cx}" y1="${cy}" x2="${x.toFixed(1)}" y2="${y.toFixed(1)}" stroke="#1e293b" stroke-width="1" />`;
+      }).join('');
+
+      const reqPolyPts = reqVals.map((v, i) => pt(i, Math.min(1, v / maxScale)).map(n => n.toFixed(1)).join(',')).join(' ');
+      const currPolyPts = currVals.map((v, i) => pt(i, Math.min(1, v / maxScale)).map(n => n.toFixed(1)).join(',')).join(' ');
+
+      const labelsAndDots = STAT_KEYS.map((k, i) => {
+        const meta = CORE_STATS_META[k];
+        const [dx, dy] = pt(i, Math.min(1, currVals[i] / maxScale));
+        const [lx, ly] = pt(i, 1.24);
+        const met = currVals[i] >= reqVals[i];
+        return `
+          <circle cx="${dx.toFixed(1)}" cy="${dy.toFixed(1)}" r="4.5" fill="${meta.color}" stroke="#090d16" stroke-width="1.5" />
+          <text x="${lx.toFixed(1)}" y="${(ly - 2).toFixed(1)}" text-anchor="middle" fill="${meta.color}" font-size="11" font-weight="800" font-family="ui-monospace, monospace">${k}</text>
+          <text x="${lx.toFixed(1)}" y="${(ly + 11).toFixed(1)}" text-anchor="middle" fill="${met ? '#86efac' : '#fca5a5'}" font-size="9.5" font-weight="700" font-family="ui-monospace, monospace">${currVals[i]}/${reqVals[i]}</text>
+        `;
+      }).join('');
+
+      wrap.innerHTML = `
+        <svg viewBox="0 0 360 304" role="img" aria-label="Radar 5 statystyk">
+          ${ringPolys}
+          ${axisLines}
+          <polygon points="${reqPolyPts}" fill="${target.bg}" stroke="${target.color}" stroke-width="2" stroke-dasharray="5 4" />
+          <polygon points="${currPolyPts}" fill="rgba(34, 197, 94, 0.24)" stroke="#4ade80" stroke-width="2.4" />
+          ${labelsAndDots}
+        </svg>
+      `;
+
+      if (legend) {
+        legend.innerHTML = `
+          <span><strong style="color:#4ade80;">■</strong> Twoje statystyki &nbsp; <strong style="color:${target.color};">┈</strong> Próg ${esc(target.short)}</span>
+          <span style="color:${ev.stats.maxSkill >= target.req.minSkill ? '#86efac' : '#fca5a5'};">Skill: poz. ${ev.stats.maxSkill}/${target.req.minSkill}</span>
+        `;
+      }
+    }
+
+    // -------------------------------------------------------------------------
+    // WYKRES 2: KRZYWA POWER LEVELA W CZASIE
+    // -------------------------------------------------------------------------
+    let plChartPointsCache = [];
+
+    function inspectPlPoint(idx) {
+      const p = plChartPointsCache[idx];
+      const bar = document.getElementById('chartPlInspect');
+      if (!p || !bar) return;
+      bar.innerHTML = `
+        <span>📅 <strong style="color:#fff;">${esc(p.label)}</strong> • ${esc(p.detail)}</span>
+        <strong style="color:var(--scouter-neon);">${p.pl.toLocaleString('pl-PL')} PL (${p.delta >= 0 ? '+' : ''}${p.delta})</strong>
+      `;
+    }
+
+    function renderPlChart(ev) {
+      const wrap = document.getElementById('chartPlWrap');
+      const inspect = document.getElementById('chartPlInspect');
+      if (!wrap) return;
+
+      const events = [
+        ...state.logs.map(l => {
+          const rw = safeRewardForCharts(l);
+          return { ts: Date.parse(l.isoDate || 0) || Date.now(), dayKey: localDayKey(l.isoDate || new Date()), delta: rw.pl, detail: `${l.name} (Ranga ${rw.grade})` };
+        }),
+        ...state.ounChecks.map(c => ({
+          ts: Date.parse(c.isoDate || 0) || Date.now(), dayKey: localDayKey(c.isoDate || new Date()), delta: 35, detail: `Meldunek OUN (${c.score}%)`
+        }))
+      ].sort((a, b) => a.ts - b.ts);
+
+      // Rekonstrukcja historycznego PL wstecz od aktualnego wyniku
+      const totalGain = events.reduce((a, e) => a + e.delta, 0);
+      let runningPl = Math.max(0, ev.pl.total - totalGain);
+      const dayMap = new Map();
+
+      events.forEach(e => {
+        runningPl += e.delta;
+        const prev = dayMap.get(e.dayKey);
+        dayMap.set(e.dayKey, {
+          dayKey: e.dayKey,
+          label: shortPlDate(e.dayKey),
+          pl: runningPl,
+          delta: (prev ? prev.delta : 0) + e.delta,
+          detail: prev ? `${prev.count + 1} aktywności` : e.detail,
+          count: prev ? prev.count + 1 : 1
+        });
+      });
+
+      let pts = Array.from(dayMap.values());
+      if (plChartRange !== 'all') {
+        const cutoff = localDayKey(new Date(Date.now() - (Number(plChartRange) - 1) * 86400000));
+        pts = pts.filter(p => p.dayKey >= cutoff);
+      }
+
+      if (pts.length === 0) {
+        pts = [{ dayKey: localDayKey(new Date()), label: 'Dziś', pl: ev.pl.total, delta: 0, detail: 'Aktualny bazowy odczyt Scoutera' }];
+      }
+
+      plChartPointsCache = pts;
+      const W = 520, H = 225, padL = 52, padR = 18, padT = 18, padB = 30;
+      const plotW = W - padL - padR, plotH = H - padT - padB;
+      const vals = pts.map(p => p.pl);
+      let minV = Math.min(...vals), maxV = Math.max(...vals);
+      if (minV === maxV) { minV = Math.max(0, minV - 100); maxV = maxV + 100; }
+      else { const pad = Math.max(30, (maxV - minV) * 0.14); minV = Math.max(0, minV - pad); maxV += pad; }
+
+      const xOf = (i) => pts.length === 1 ? padL + plotW / 2 : padL + (i / (pts.length - 1)) * plotW;
+      const yOf = (v) => padT + plotH - ((v - minV) / (maxV - minV)) * plotH;
+
+      const gridRows = [0, 0.5, 1].map(f => {
+        const v = Math.round(minV + (maxV - minV) * f);
+        const y = yOf(v);
+        return `
+          <line x1="${padL}" y1="${y.toFixed(1)}" x2="${W - padR}" y2="${y.toFixed(1)}" stroke="#1e293b" stroke-dasharray="3 3" />
+          <text x="${padL - 7}" y="${(y + 4).toFixed(1)}" text-anchor="end" fill="#64748b" font-size="10" font-family="ui-monospace, monospace">${v}</text>
+        `;
+      }).join('');
+
+      const line9000 = (9000 >= minV && 9000 <= maxV)
+        ? `<line x1="${padL}" y1="${yOf(9000).toFixed(1)}" x2="${W - padR}" y2="${yOf(9000).toFixed(1)}" stroke="#facc15" stroke-width="1.3" stroke-dasharray="5 4" />
+           <text x="${W - padR}" y="${(yOf(9000) - 5).toFixed(1)}" text-anchor="end" fill="#facc15" font-size="9.5" font-weight="800" font-family="ui-monospace, monospace">OVER 9000</text>`
+        : '';
+
+      const coords = pts.map((p, i) => [xOf(i), yOf(p.pl)]);
+      const linePath = coords.map((c, i) => `${i === 0 ? 'M' : 'L'}${c[0].toFixed(1)},${c[1].toFixed(1)}`).join(' ');
+      const areaPath = pts.length > 1
+        ? `${linePath} L${coords[coords.length - 1][0].toFixed(1)},${(padT + plotH).toFixed(1)} L${coords[0][0].toFixed(1)},${(padT + plotH).toFixed(1)} Z`
+        : '';
+
+      const step = Math.max(1, Math.ceil(pts.length / 6));
+      const xLabels = pts.map((p, i) => {
+        if (i !== 0 && i !== pts.length - 1 && i % step !== 0) return '';
+        return `<text x="${xOf(i).toFixed(1)}" y="${H - 8}" text-anchor="middle" fill="#64748b" font-size="10" font-family="ui-monospace, monospace">${esc(p.label)}</text>`;
+      }).join('');
+
+      const dots = coords.map((c, i) => `
+        <circle class="chart-dot-btn" cx="${c[0].toFixed(1)}" cy="${c[1].toFixed(1)}" r="5" fill="#4ade80" stroke="#090d16" stroke-width="2" onclick="inspectPlPoint(${i})" />
+      `).join('');
+
+      wrap.innerHTML = `
+        <svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Krzywa Power Levela">
+          <defs>
+            <linearGradient id="plGrad" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#22c55e" stop-opacity="0.34" />
+              <stop offset="100%" stop-color="#22c55e" stop-opacity="0.02" />
+            </linearGradient>
+          </defs>
+          ${gridRows}
+          ${line9000}
+          ${areaPath ? `<path d="${areaPath}" fill="url(#plGrad)" />` : ''}
+          ${pts.length > 1 ? `<path d="${linePath}" fill="none" stroke="#4ade80" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" />` : ''}
+          ${dots}
+          ${xLabels}
+        </svg>
+      `;
+
+      if (inspect) inspectPlPoint(pts.length - 1);
+    }
+
+    // -------------------------------------------------------------------------
+    // WYKRES 3: GOTOWOŚĆ OUN (%) VS INTENSYWNOŚĆ RPE
+    // -------------------------------------------------------------------------
+    let ounChartDaysCache = [];
+
+    function inspectOunDay(idx) {
+      const d = ounChartDaysCache[idx];
+      const bar = document.getElementById('chartOunInspect');
+      if (!d || !bar) return;
+      const ounTxt = d.oun !== null ? `OUN: ${d.oun}%` : 'OUN: brak meldunku';
+      const rpeTxt = d.rpe !== null ? `RPE: ${d.rpe}/10` : 'Trening: brak';
+      const tip = d.oun !== null && d.oun < 60 && d.rpe >= 8
+        ? '🔴 Uwaga: wysokie RPE przy niskim OUN — rozważ lżejszą sesję'
+        : d.oun !== null && d.oun >= 80
+          ? '🟢 Wysoka gotowość układu nerwowego'
+          : '🟡 Zbalansowane obciążenie';
+      bar.innerHTML = `<span>📅 <strong style="color:#fff;">${shortPlDate(d.dayKey)}</strong> • <span style="color:var(--cyan);">${ounTxt}</span> • <span style="color:var(--orange-bright);">${rpeTxt}</span></span><span>${tip}</span>`;
+    }
+
+    function renderOunVsRpeChart() {
+      const wrap = document.getElementById('chartOunWrap');
+      const inspect = document.getElementById('chartOunInspect');
+      if (!wrap) return;
+
+      const days = [];
+      for (let i = ounChartRange - 1; i >= 0; i--) {
+        const dk = localDayKey(new Date(Date.now() - i * 86400000));
+        const dayOuns = state.ounChecks.filter(c => localDayKey(c.isoDate || '') === dk);
+        const dayLogs = state.logs.filter(l => localDayKey(l.isoDate || '') === dk);
+        const avgOun = dayOuns.length ? Math.round(dayOuns.reduce((a, c) => a + (Number(c.score) || 0), 0) / dayOuns.length) : null;
+        const maxRpe = dayLogs.length ? Math.max(...dayLogs.map(l => Number(l.rpe) || 0)) : null;
+        days.push({ dayKey: dk, oun: avgOun, rpe: maxRpe });
+      }
+      ounChartDaysCache = days;
+
+      const W = 820, H = 225, padL = 42, padR = 16, padT = 18, padB = 30;
+      const plotW = W - padL - padR, plotH = H - padT - padB;
+      const colW = plotW / days.length;
+      const barW = Math.max(6, Math.min(22, colW * 0.52));
+      const xOf = (i) => padL + colW * i + colW / 2;
+      const yOf = (pct) => padT + plotH - (Math.max(0, Math.min(100, pct)) / 100) * plotH;
+
+      const grid = [0, 25, 50, 75, 100].map(v => `
+        <line x1="${padL}" y1="${yOf(v).toFixed(1)}" x2="${W - padR}" y2="${yOf(v).toFixed(1)}" stroke="#1e293b" stroke-dasharray="3 3" />
+        <text x="${padL - 7}" y="${(yOf(v) + 4).toFixed(1)}" text-anchor="end" fill="#64748b" font-size="10" font-family="ui-monospace, monospace">${v}%</text>
+      `).join('');
+
+      const deloadLine = `
+        <line x1="${padL}" y1="${yOf(60).toFixed(1)}" x2="${W - padR}" y2="${yOf(60).toFixed(1)}" stroke="#ef4444" stroke-opacity="0.65" stroke-dasharray="5 4" />
+        <text x="${W - padR}" y="${(yOf(60) - 5).toFixed(1)}" text-anchor="end" fill="#fca5a5" font-size="9.5" font-family="ui-monospace, monospace">PRÓG ZMĘCZENIA OUN (60%)</text>
+      `;
+
+      const bars = days.map((d, i) => {
+        if (d.rpe === null) return '';
+        const h = (d.rpe / 10) * plotH;
+        const x = xOf(i) - barW / 2;
+        const y = padT + plotH - h;
+        const fill = d.rpe >= 9 ? 'rgba(239, 68, 68, 0.58)' : 'rgba(255, 107, 0, 0.48)';
+        return `<rect class="chart-dot-btn" x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${barW.toFixed(1)}" height="${h.toFixed(1)}" rx="3" fill="${fill}" stroke="${d.rpe >= 9 ? '#ef4444' : '#ff6b00'}" stroke-width="1" onclick="inspectOunDay(${i})" />`;
+      }).join('');
+
+      const ounPts = days.map((d, i) => d.oun !== null ? { i, x: xOf(i), y: yOf(d.oun) } : null).filter(Boolean);
+      const ounPath = ounPts.length > 1
+        ? ounPts.map((p, idx) => `${idx === 0 ? 'M' : 'L'}${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ')
+        : '';
+
+      const ounDots = ounPts.map(p => `
+        <circle class="chart-dot-btn" cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="5" fill="#38bdf8" stroke="#090d16" stroke-width="2" onclick="inspectOunDay(${p.i})" />
+      `).join('');
+
+      const step = Math.max(1, Math.ceil(days.length / 8));
+      const xLabels = days.map((d, i) => {
+        if (i !== 0 && i !== days.length - 1 && i % step !== 0) return '';
+        return `<text x="${xOf(i).toFixed(1)}" y="${H - 8}" text-anchor="middle" fill="#64748b" font-size="10" font-family="ui-monospace, monospace">${shortPlDate(d.dayKey)}</text>`;
+      }).join('');
+
+      wrap.innerHTML = `
+        <svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Gotowość OUN vs RPE">
+          ${grid}
+          ${deloadLine}
+          ${bars}
+          ${ounPath ? `<path d="${ounPath}" fill="none" stroke="#38bdf8" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" />` : ''}
+          ${ounDots}
+          ${xLabels}
+        </svg>
+      `;
+
+      if (inspect) {
+        const lastWithData = [...days].reverse().findIndex(d => d.oun !== null || d.rpe !== null);
+        if (lastWithData !== -1) inspectOunDay(days.length - 1 - lastWithData);
+        else inspect.textContent = 'Brak meldunków OUN i sesji w wybranym okresie — dodaj pierwszy wpis w zakładce Dziennik & OUN.';
+      }
+    }
+
+    // -------------------------------------------------------------------------
+    // WYKRES 4: MAPA AKTYWNOŚCI (12 TYGODNI) + PODZIAŁ +PL WG AKTYWNOŚCI
+    // -------------------------------------------------------------------------
+    let heatmapDaysCache = [];
+
+    function inspectHeatmapDay(idx) {
+      const d = heatmapDaysCache[idx];
+      const bar = document.getElementById('chartHeatmapInspect');
+      if (!d || !bar) return;
+      bar.innerHTML = d.count > 0
+        ? `<span>📅 <strong style="color:#fff;">${shortPlDate(d.dayKey)}</strong> • Aktywności: <strong>${d.count}</strong></span><strong style="color:var(--gold);">+${d.pl} PL</strong>`
+        : `<span>📅 <strong style="color:#fff;">${shortPlDate(d.dayKey)}</strong> • Dzień regeneracji (0 wpisów)</span><span style="color:var(--text-dim);">0 PL</span>`;
+    }
+
+    function renderHeatmapAndActivityBars() {
+      const wrap = document.getElementById('chartHeatmapWrap');
+      const summary = document.getElementById('chartHeatmapSummary');
+      const barsWrap = document.getElementById('chartActivityBars');
+      if (!wrap || !barsWrap) return;
+
+      const dayStats = new Map();
+      state.logs.forEach(l => {
+        const dk = localDayKey(l.isoDate || '');
+        if (!dk) return;
+        const rw = safeRewardForCharts(l);
+        const curr = dayStats.get(dk) || { count: 0, pl: 0 };
+        curr.count += 1;
+        curr.pl += rw.pl;
+        dayStats.set(dk, curr);
+      });
+      state.ounChecks.forEach(c => {
+        const dk = localDayKey(c.isoDate || '');
+        if (!dk) return;
+        const curr = dayStats.get(dk) || { count: 0, pl: 0 };
+        curr.count += 1;
+        curr.pl += 35;
+        dayStats.set(dk, curr);
+      });
+
+      const totalDays = 84; // 12 tygodni
+      const cells = [];
+      let activeDays = 0;
+
+      for (let i = totalDays - 1; i >= 0; i--) {
+        const dk = localDayKey(new Date(Date.now() - i * 86400000));
+        const info = dayStats.get(dk) || { count: 0, pl: 0 };
+        if (info.count > 0) activeDays++;
+        const lvl = info.pl >= 220 ? 'hm-l4' : info.pl >= 120 ? 'hm-l3' : info.pl >= 60 ? 'hm-l2' : info.count > 0 ? 'hm-l1' : '';
+        cells.push({ dayKey: dk, count: info.count, pl: info.pl, lvl });
+      }
+      heatmapDaysCache = cells;
+
+      if (summary) summary.textContent = `${activeDays} / ${totalDays} DNI AKTYWNYCH`;
+      wrap.innerHTML = `<div class="heatmap-grid">${cells.map((c, idx) =>
+        `<button type="button" class="hm-cell ${c.lvl}" title="${shortPlDate(c.dayKey)}: +${c.pl} PL" onclick="inspectHeatmapDay(${idx})"></button>`
+      ).join('')}</div>`;
+
+      // Podział +PL wg kategorii aktywności
+      const catTotals = new Map();
+      state.logs.forEach(l => {
+        const rw = safeRewardForCharts(l);
+        const label = rw.activityName || l.type || 'Trening';
+        catTotals.set(label, (catTotals.get(label) || 0) + rw.pl);
+      });
+      if (state.ounChecks.length) {
+        catTotals.set('🧠 Meldunki OUN', state.ounChecks.length * 35);
+      }
+
+      const sortedCats = Array.from(catTotals.entries()).sort((a, b) => b[1] - a[1]);
+      if (!sortedCats.length) {
+        barsWrap.innerHTML = '<div class="empty-state" style="padding:14px;">Zaloguj pierwszy trening, aby zobaczyć rozkład aktywności.</div>';
+        return;
+      }
+
+      const totalCatPl = sortedCats.reduce((a, x) => a + x[1], 0) || 1;
+      const palette = ['#ff6b00', '#4ade80', '#38bdf8', '#facc15', '#a855f7', '#fb7185'];
+
+      barsWrap.innerHTML = sortedCats.slice(0, 6).map(([name, val], idx) => {
+        const pct = Math.round((val / totalCatPl) * 100);
+        const col = palette[idx % palette.length];
+        return `
+          <div class="card-deep" style="padding:9px 11px;">
+            <div style="display:flex; justify-content:space-between; font-size:0.79rem; font-weight:700; margin-bottom:5px;">
+              <span>${esc(name)}</span>
+              <span style="font-family:var(--font-mono); color:${col};">+${val.toLocaleString('pl-PL')} PL (${pct}%)</span>
+            </div>
+            <div class="progress-track">
+              <div class="progress-fill" style="width:${pct}%; background:${col};"></div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // -------------------------------------------------------------------------
+    // WYKRES 5: PROGRES 1RM I SIŁY WZGLĘDNEJ (× BW)
+    // -------------------------------------------------------------------------
+    let prPointsCache = [];
+
+    function inspectPrPoint(idx) {
+      const p = prPointsCache[idx];
+      const bar = document.getElementById('chartPrInspect');
+      if (!p || !bar) return;
+      const valTxt = prChartMode === 'bw'
+        ? `${p.val.toFixed(2)}× masy ciała (masa: ${p.bw} kg)`
+        : `${p.isWeighted ? '+' : ''}${p.val.toFixed(1)} kg`;
+      bar.innerHTML = `<span>📅 <strong style="color:#fff;">${shortPlDate(p.dayKey)}</strong> • ${esc(p.liftName)}</span><strong style="color:var(--gold);">${valTxt}</strong>`;
+    }
+
+    function renderPrProgressChart() {
+      const wrap = document.getElementById('chartPrWrap');
+      const inspect = document.getElementById('chartPrInspect');
+      const deltaBadge = document.getElementById('chartPrDeltaBadge');
+      const select = document.getElementById('chartPrLiftSelect');
+      if (!wrap || !select) return;
+
+      ensurePrHistory();
+      const liftKey = select.value || 'weightedPullups';
+      const meta = LIFT_META[liftKey] || { name: liftKey, weighted: false };
+
+      const pts = state.prHistory.map(h => {
+        const kg = Number(h[liftKey]) || 0;
+        const bw = Math.max(35, Number(h.bw) || state.records.bodyweight || 75);
+        const val = prChartMode === 'bw'
+          ? (meta.weighted ? (bw + kg) / bw : kg / bw)
+          : kg;
+        return { dayKey: h.dayKey || localDayKey(h.isoDate), val, bw, liftName: meta.name, isWeighted: meta.weighted };
+      });
+      prPointsCache = pts;
+
+      if (deltaBadge && pts.length) {
+        const diff = pts[pts.length - 1].val - pts[0].val;
+        const unit = prChartMode === 'bw' ? '× BW' : ' kg';
+        deltaBadge.textContent = pts.length > 1
+          ? `PROGRES: ${diff >= 0 ? '+' : ''}${diff.toFixed(prChartMode === 'bw' ? 2 : 1)}${unit}`
+          : `AKTUALNIE: ${pts[0].val.toFixed(prChartMode === 'bw' ? 2 : 1)}${unit}`;
+      }
+
+      const W = 520, H = 225, padL = 52, padR = 18, padT = 18, padB = 30;
+      const plotW = W - padL - padR, plotH = H - padT - padB;
+      const vals = pts.map(p => p.val);
+      let minV = Math.min(...vals), maxV = Math.max(...vals);
+      if (minV === maxV) {
+        const delta = prChartMode === 'bw' ? 0.25 : 10;
+        minV = Math.max(0, minV - delta);
+        maxV = maxV + delta;
+      } else {
+        const pad = (maxV - minV) * 0.16;
+        minV = Math.max(0, minV - pad);
+        maxV += pad;
+      }
+
+      const xOf = (i) => pts.length === 1 ? padL + plotW / 2 : padL + (i / (pts.length - 1)) * plotW;
+      const yOf = (v) => padT + plotH - ((v - minV) / (maxV - minV)) * plotH;
+
+      const gridRows = [0, 0.5, 1].map(f => {
+        const v = minV + (maxV - minV) * f;
+        const y = yOf(v);
+        const lbl = prChartMode === 'bw' ? `${v.toFixed(2)}×` : `${Math.round(v)}kg`;
+        return `
+          <line x1="${padL}" y1="${y.toFixed(1)}" x2="${W - padR}" y2="${y.toFixed(1)}" stroke="#1e293b" stroke-dasharray="3 3" />
+          <text x="${padL - 7}" y="${(y + 4).toFixed(1)}" text-anchor="end" fill="#64748b" font-size="10" font-family="ui-monospace, monospace">${lbl}</text>
+        `;
+      }).join('');
+
+      const coords = pts.map((p, i) => [xOf(i), yOf(p.val)]);
+      const linePath = coords.map((c, i) => `${i === 0 ? 'M' : 'L'}${c[0].toFixed(1)},${c[1].toFixed(1)}`).join(' ');
+      const areaPath = pts.length > 1
+        ? `${linePath} L${coords[coords.length - 1][0].toFixed(1)},${(padT + plotH).toFixed(1)} L${coords[0][0].toFixed(1)},${(padT + plotH).toFixed(1)} Z`
+        : '';
+
+      const step = Math.max(1, Math.ceil(pts.length / 6));
+      const xLabels = pts.map((p, i) => {
+        if (i !== 0 && i !== pts.length - 1 && i % step !== 0) return '';
+        return `<text x="${xOf(i).toFixed(1)}" y="${H - 8}" text-anchor="middle" fill="#64748b" font-size="10" font-family="ui-monospace, monospace">${shortPlDate(p.dayKey)}</text>`;
+      }).join('');
+
+      const dots = coords.map((c, i) => `
+        <circle class="chart-dot-btn" cx="${c[0].toFixed(1)}" cy="${c[1].toFixed(1)}" r="5" fill="#facc15" stroke="#090d16" stroke-width="2" onclick="inspectPrPoint(${i})" />
+      `).join('');
+
+      wrap.innerHTML = `
+        <svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Progres 1RM">
+          <defs>
+            <linearGradient id="prGrad" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#ff6b00" stop-opacity="0.34" />
+              <stop offset="100%" stop-color="#ff6b00" stop-opacity="0.02" />
+            </linearGradient>
+          </defs>
+          ${gridRows}
+          ${areaPath ? `<path d="${areaPath}" fill="url(#prGrad)" />` : ''}
+          ${pts.length > 1 ? `<path d="${linePath}" fill="none" stroke="#ff8c24" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" />` : ''}
+          ${dots}
+          ${xLabels}
+        </svg>
+      `;
+
+      if (inspect && pts.length) inspectPrPoint(pts.length - 1);
+    }
+
+    function renderCharts() {
+      if (!document.getElementById('tab-charts')) return;
+      ensurePrHistory();
+      const ev = getFullEvaluation();
+      renderRadarChart(ev);
+      renderPlChart(ev);
+      renderOunVsRpeChart();
+      renderHeatmapAndActivityBars();
+      renderPrProgressChart();
+    }
+
+    // Bezpieczne podpięcie historii 1RM i odświeżania wykresów do istniejących funkcji
+    const _origNormalizeStateForCharts = normalizeState;
+    normalizeState = function (raw) {
+      const normalized = _origNormalizeStateForCharts(raw);
+      normalized.prHistory = Array.isArray(raw?.prHistory) ? raw.prHistory : [];
+      return normalized;
+    };
+
+    const _origHandleCalibrationSaveForCharts = handleCalibrationSave;
+    handleCalibrationSave = function (e) {
+      _origHandleCalibrationSaveForCharts(e);
+      recordPrSnapshot();
+      saveState();
+      renderCharts();
+    };
+
+    const _origSaveCalculatedPRForCharts = saveCalculatedPR;
+    saveCalculatedPR = function () {
+      _origSaveCalculatedPRForCharts();
+      recordPrSnapshot();
+      saveState();
+      renderCharts();
+    };
+
+    const _origRenderAllForCharts = renderAll;
+    renderAll = function () {
+      _origRenderAllForCharts();
+      renderCharts();
+    };
+
+    const _origSwitchTabForCharts = switchTab;
+    switchTab = function (tabName) {
+      _origSwitchTabForCharts(tabName);
+      if (tabName === 'charts') renderCharts();
+    };
+
+    window.addEventListener('DOMContentLoaded', () => {
+      ensurePrHistory();
+      renderCharts();
     });
   </script>
 </body>
