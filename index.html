@@ -1696,7 +1696,137 @@
       border-color: #fef08a;
       box-shadow: 0 0 10px rgba(250, 204, 21, 0.65);
     }
+
+    /* =========================================================================
+  10. INTERAKTYWNA CHECKLISTA ĆWICZEŃ NA KARCIE PLANU
+  ========================================================================= */
+    .plan-checklist {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+
+    .plan-ex-check-item {
+      background: var(--bg-card-deep);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 10px 11px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      transition: border-color 0.16s ease, background 0.16s ease;
+    }
+
+    .plan-ex-check-item.is-done {
+      border-color: var(--scouter-border);
+      background: rgba(34, 197, 94, 0.08);
+    }
+
+    .plan-ex-check-top {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .plan-ex-check-label {
+      display: flex;
+      align-items: flex-start;
+      gap: 9px;
+      cursor: pointer;
+      flex: 1;
+      min-width: 0;
+      user-select: none;
+    }
+
+    .plan-ex-check-label input[type="checkbox"] {
+      width: 20px;
+      height: 20px;
+      margin-top: 1px;
+      accent-color: var(--scouter);
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+
+    .plan-ex-title {
+      font-size: 0.86rem;
+      font-weight: 800;
+      color: #fff;
+      line-height: 1.25;
+    }
+
+    .plan-ex-check-item.is-done .plan-ex-title {
+      color: #bbf7d0;
+    }
+
+    .plan-ex-target {
+      font-family: var(--font-mono);
+      font-size: 0.7rem;
+      color: var(--text-dim);
+      margin-top: 2px;
+    }
+
+    .plan-ex-inputs {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 6px;
+    }
+
+    .plan-mini-field {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+
+    .plan-mini-field span {
+      font-family: var(--font-mono);
+      font-size: 0.62rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      letter-spacing: 0.04em;
+    }
+
+    .plan-mini-input {
+      width: 100%;
+      padding: 6px 7px;
+      min-height: 34px;
+      border-radius: 7px;
+      border: 1px solid var(--border-light);
+      background: var(--bg-input);
+      color: #fff;
+      font-family: var(--font-mono);
+      font-size: 0.8rem;
+      font-weight: 700;
+      outline: none;
+    }
+
+    .plan-mini-input:focus {
+      border-color: var(--orange);
+    }
+
+    .plan-live-summary {
+      padding: 10px 12px;
+      border-radius: var(--radius-md);
+      background: var(--bg-card-deep);
+      border: 1px solid var(--border);
+      margin-bottom: 10px;
+      transition: border-color 0.2s ease, background 0.2s ease;
+    }
+
+    .plan-live-summary.has-checked {
+      background: var(--scouter-soft);
+      border-color: var(--scouter-border);
+    }
+
+    @media (max-width: 460px) {
+      .plan-ex-inputs {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
   </style>
+
 </head>
 
 <body>
@@ -6518,6 +6648,522 @@
     window.addEventListener('DOMContentLoaded', () => {
       ensurePrHistory();
       renderCharts();
+    });
+    // =========================================================================
+    // 10F. CHECKLISTA ĆWICZEŃ W PLANACH (SERIE, POWT., RPE, KG -> +PL I 5 STATYSTYK)
+    // =========================================================================
+    function restorePlanDraftsFromStorage() {
+      if (state && state.planDrafts && typeof state.planDrafts === 'object') return;
+      state.planDrafts = {};
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (parsed && parsed.planDrafts && typeof parsed.planDrafts === 'object') {
+            state.planDrafts = parsed.planDrafts;
+          }
+        }
+      } catch (_) { }
+    }
+
+    function parseExerciseDefaultsFromPlan(ex) {
+      const setsStr = String(ex?.sets || '');
+      const loadStr = String(ex?.load || '');
+      const combined = `${setsStr} ${loadStr}`;
+
+      let sets = 3;
+      let reps = 8;
+      const sxr = setsStr.match(/(\d+)\s*[x×]\s*(\d+)/i);
+      if (sxr) {
+        sets = Math.max(1, parseInt(sxr[1], 10) || 3);
+        reps = Math.max(1, parseInt(sxr[2], 10) || 8);
+      } else {
+        const onlyNum = setsStr.match(/(\d+)/);
+        if (onlyNum) sets = Math.max(1, parseInt(onlyNum[1], 10) || 3);
+      }
+
+      let kg = 0;
+      const kgMatch = combined.match(/([+-]?\d+(?:[.,]\d+)?)\s*kg/i);
+      if (kgMatch) {
+        kg = Math.abs(parseFloat(kgMatch[1].replace(',', '.'))) || 0;
+      }
+
+      let rpe = 8;
+      const rpeMatch = combined.match(/rpe\s*(\d+(?:[.,]\d+)?)/i);
+      if (rpeMatch) {
+        rpe = Math.min(10, Math.max(1, parseFloat(rpeMatch[1].replace(',', '.')) || 8));
+      }
+
+      return { sets, reps, rpe, kg };
+    }
+
+    function getPlanObjectById(planId, isCustom) {
+      return isCustom
+        ? state.customPlans.find(p => p.id === planId)
+        : BUILTIN_PLANS.find(p => p.id === planId);
+    }
+
+    function ensurePlanDraft(plan) {
+      restorePlanDraftsFromStorage();
+      const existing = Array.isArray(state.planDrafts[plan.id]) ? state.planDrafts[plan.id] : [];
+      const synced = (plan.exercises || []).map((ex, idx) => {
+        const prev = existing[idx];
+        const sameSignature = prev
+          && prev.sourceName === ex.name
+          && prev.sourceSets === (ex.sets || '')
+          && prev.sourceLoad === (ex.load || '');
+        if (sameSignature) return prev;
+
+        const defs = parseExerciseDefaultsFromPlan(ex);
+        return {
+          checked: prev ? Boolean(prev.checked) : false,
+          sets: defs.sets,
+          reps: defs.reps,
+          rpe: defs.rpe,
+          kg: defs.kg,
+          sourceName: ex.name,
+          sourceSets: ex.sets || '',
+          sourceLoad: ex.load || ''
+        };
+      });
+      state.planDrafts[plan.id] = synced;
+      return synced;
+    }
+
+    function calculateSinglePlanExerciseReward(exName, entry, planType) {
+      const sets = Math.max(1, parseInt(entry.sets, 10) || 1);
+      const reps = Math.max(1, parseInt(entry.reps, 10) || 1);
+      const rpe = Math.min(10, Math.max(1, parseFloat(entry.rpe) || 8));
+      const kg = Math.max(0, parseFloat(entry.kg) || 0);
+      const bw = Math.max(35, Number(state?.records?.bodyweight) || 75);
+      const lower = String(exName || '').toLowerCase();
+
+      const isWeightedCali = /podciąg|pull|dip|muscle|lever|planche|handstand|hspu|flag|pistol|l-sit|v-sit/.test(lower);
+      const isCompound = /przysiad|squat|martwy|deadlift|wycisk|bench|ohp|wiosł|row/.test(lower);
+      const isIso = /izometr|zass|hold|balans/.test(lower);
+      const isCardio = /bieg|basen|rower|interwał|skakanka|sprint/.test(lower);
+
+      // Profil rozdziału XP zależny od zakresu powtórzeń (siła vs hipertrofia vs wytrzymałość)
+      let w;
+      if (reps <= 5) {
+        w = { STR: 0.42, AGI: 0.12, END: 0.08, CNS: 0.26, SPI: 0.12 };
+      } else if (reps <= 12) {
+        w = { STR: 0.30, AGI: 0.16, END: 0.22, CNS: 0.18, SPI: 0.14 };
+      } else {
+        w = { STR: 0.14, AGI: 0.18, END: 0.40, CNS: 0.10, SPI: 0.18 };
+      }
+
+      if (isWeightedCali || planType === 'Kalistenika') {
+        w.AGI += 0.12;
+        w.CNS += 0.04;
+      } else if (isCompound) {
+        w.STR += 0.10;
+        w.CNS += 0.04;
+      } else if (isIso || planType === 'OUN / Izometria') {
+        w.CNS += 0.18;
+      } else if (isCardio || planType === 'Kondycja / Hipertrofia') {
+        w.END += 0.18;
+      }
+
+      if (rpe >= 8.5) {
+        w.CNS += 0.06;
+        w.SPI += 0.04;
+      }
+
+      const sumW = STAT_KEYS.reduce((a, k) => a + w[k], 0) || 1;
+      STAT_KEYS.forEach(k => { w[k] = w[k] / sumW; });
+
+      const rpeMult = 0.55 + rpe * 0.085; // RPE 6 -> 1.06, RPE 7 -> 1.145, RPE 8 -> 1.23, RPE 10 -> 1.40
+      const loadMult = kg > 0
+        ? (isWeightedCali ? 1 + Math.min(1.5, (kg / bw) * 0.95) : 1 + Math.min(1.4, (kg / bw) * 0.45))
+        : 1.0;
+      const typeMult = (isWeightedCali || isCompound) ? 1.15 : isIso ? 1.10 : 1.0;
+
+      const pl = Math.max(4, Math.round(sets * Math.pow(reps, 0.52) * 2.35 * rpeMult * loadMult * typeMult));
+      const totalXp = Math.max(12, Math.round(pl * 2.75));
+      const xp = {};
+      STAT_KEYS.forEach(k => { xp[k] = Math.round(totalXp * w[k]); });
+
+      return { sets, reps, rpe, kg, pl, totalXp, xp, isWeightedCali };
+    }
+
+    function calculatePlanCheckedSummary(plan) {
+      const draft = ensurePlanDraft(plan);
+      const xp = { STR: 0, AGI: 0, END: 0, CNS: 0, SPI: 0 };
+      let pl = 0;
+      let totalSets = 0;
+      let totalReps = 0;
+      let rpeWeightedSum = 0;
+      let checkedCount = 0;
+      const items = [];
+
+      (plan.exercises || []).forEach((ex, idx) => {
+        const entry = draft[idx];
+        const rw = calculateSinglePlanExerciseReward(ex.name, entry, plan.type);
+        items.push({ ex, entry, rw, idx });
+        if (entry.checked) {
+          checkedCount += 1;
+          pl += rw.pl;
+          totalSets += rw.sets;
+          totalReps += rw.sets * rw.reps;
+          rpeWeightedSum += rw.rpe * rw.sets;
+          STAT_KEYS.forEach(k => { xp[k] += rw.xp[k]; });
+        }
+      });
+
+      const avgRpe = totalSets > 0 ? Math.round((rpeWeightedSum / totalSets) * 10) / 10 : 0;
+      const totalXp = STAT_KEYS.reduce((a, k) => a + xp[k], 0);
+      const grade = pl >= 280 ? 'S+' : pl >= 180 ? 'S' : pl >= 115 ? 'A' : pl >= 60 ? 'B' : 'C';
+      const gradeBadge = grade === 'S+' ? 'badge-gold' : grade === 'S' ? 'badge-orange' : grade === 'A' ? 'badge-green' : grade === 'B' ? 'badge-cyan' : 'badge-purple';
+
+      const diffKey = avgRpe >= 9.5 ? 5 : avgRpe >= 8.5 ? 4 : avgRpe >= 7 ? 3 : avgRpe >= 5 ? 2 : 1;
+      const diffFallback = {
+        1: { label: '⭐ Łatwy / Regeneracja', badge: 'badge-cyan' },
+        2: { label: '⭐⭐ Umiarkowany', badge: 'badge-green' },
+        3: { label: '⭐⭐⭐ Wymagający', badge: 'badge-gold' },
+        4: { label: '🔥 Ciężki (Z-Warrior)', badge: 'badge-orange' },
+        5: { label: '☄️ Ekstremalny (100x)', badge: 'badge-red' }
+      };
+      const diffDef = (typeof DIFFICULTY_LEVELS !== 'undefined' && DIFFICULTY_LEVELS[diffKey]) || diffFallback[diffKey];
+
+      return {
+        items,
+        checkedCount,
+        totalCount: (plan.exercises || []).length,
+        totalSets,
+        totalReps,
+        avgRpe,
+        pl,
+        totalXp,
+        xp,
+        grade,
+        gradeBadge,
+        difficulty: diffKey,
+        diffLabel: diffDef.label,
+        diffBadge: diffDef.badge
+      };
+    }
+
+    function renderPlanSummaryInnerHtml(sum) {
+      if (sum.checkedCount === 0) {
+        return `
+          <div style="font-size:0.78rem; color:var(--text-muted); display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:6px;">
+            <span>☑️ Zaznacz wykonane ćwiczenia powyżej, aby policzyć nagrodę <strong>+PL</strong> i <strong>5 statystyk</strong>.</span>
+            <span style="font-family:var(--font-mono); color:var(--text-dim);">0 / ${sum.totalCount} ćw.</span>
+          </div>
+        `;
+      }
+
+      return `
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:7px;">
+          <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
+            <span class="badge ${sum.gradeBadge}">RANGA: ${sum.grade}</span>
+            <span class="badge badge-cyan">${sum.checkedCount}/${sum.totalCount} ćw. • ${sum.totalSets} serii</span>
+            <span class="badge badge-gold">Śr. RPE ${sum.avgRpe}</span>
+          </div>
+          <strong style="font-family:var(--font-mono); font-size:1.05rem; color:var(--scouter-neon);">+${sum.pl} PL</strong>
+        </div>
+        <div style="display:flex; flex-wrap:wrap; gap:5px; font-family:var(--font-mono); font-size:0.71rem;">
+          <span class="badge badge-orange">💪 STR +${sum.xp.STR}</span>
+          <span class="badge badge-gold">⚡ AGI +${sum.xp.AGI}</span>
+          <span class="badge badge-green">🔋 END +${sum.xp.END}</span>
+          <span class="badge badge-cyan">🧠 CNS +${sum.xp.CNS}</span>
+          <span class="badge badge-purple">🔥 SPI +${sum.xp.SPI}</span>
+        </div>
+      `;
+    }
+
+    function updatePlanCardLiveDom(planId, isCustom, changedIdx = null) {
+      const plan = getPlanObjectById(planId, isCustom);
+      if (!plan) return;
+      const sum = calculatePlanCheckedSummary(plan);
+
+      if (changedIdx !== null && sum.items[changedIdx]) {
+        const it = sum.items[changedIdx];
+        const rowEl = document.getElementById(`plan-row-${planId}-${changedIdx}`);
+        const badgeEl = document.getElementById(`plan-ex-pl-${planId}-${changedIdx}`);
+        if (rowEl) rowEl.classList.toggle('is-done', Boolean(it.entry.checked));
+        if (badgeEl) {
+          badgeEl.className = `badge ${it.entry.checked ? 'badge-green' : 'badge-purple'}`;
+          badgeEl.textContent = `+${it.rw.pl} PL`;
+        }
+      }
+
+      const sumBox = document.getElementById(`plan-sum-${planId}`);
+      if (sumBox) {
+        sumBox.classList.toggle('has-checked', sum.checkedCount > 0);
+        sumBox.innerHTML = renderPlanSummaryInnerHtml(sum);
+      }
+
+      const logBtn = document.getElementById(`plan-log-btn-${planId}`);
+      if (logBtn) {
+        logBtn.textContent = sum.checkedCount > 0
+          ? `⚡ Zaloguj wykonane (${sum.checkedCount}/${sum.totalCount}) • +${sum.pl} PL`
+          : '⚡ Zaloguj ten trening';
+      }
+    }
+
+    function togglePlanExerciseCheck(planId, isCustom, idx, isChecked) {
+      const plan = getPlanObjectById(planId, isCustom);
+      if (!plan) return;
+      const draft = ensurePlanDraft(plan);
+      if (!draft[idx]) return;
+      draft[idx].checked = Boolean(isChecked);
+      saveState();
+      updatePlanCardLiveDom(planId, isCustom, idx);
+    }
+
+    function updatePlanExerciseField(planId, isCustom, idx, field, rawValue) {
+      const plan = getPlanObjectById(planId, isCustom);
+      if (!plan) return;
+      const draft = ensurePlanDraft(plan);
+      if (!draft[idx]) return;
+      const num = parseFloat(String(rawValue).replace(',', '.'));
+      if (!Number.isNaN(num)) {
+        if (field === 'rpe') draft[idx].rpe = Math.min(10, Math.max(1, num));
+        else if (field === 'kg') draft[idx].kg = Math.max(0, num);
+        else draft[idx][field] = Math.max(1, Math.round(num));
+      }
+      saveState();
+      updatePlanCardLiveDom(planId, isCustom, idx);
+    }
+
+    function setAllPlanExercisesChecked(planId, isCustom, checkedState) {
+      const plan = getPlanObjectById(planId, isCustom);
+      if (!plan) return;
+      const draft = ensurePlanDraft(plan);
+      draft.forEach(item => { item.checked = Boolean(checkedState); });
+      saveState();
+      renderPlans();
+    }
+
+    function logCheckedPlanWorkout(planId, isCustom) {
+      const plan = getPlanObjectById(planId, isCustom);
+      if (!plan) return;
+      const sum = calculatePlanCheckedSummary(plan);
+
+      if (sum.checkedCount === 0) {
+        showToast('☑️ Zaznacz najpierw wykonane ćwiczenia na liście (lub kliknij „Zaznacz wszystkie”).', 'orange');
+        return;
+      }
+
+      const noteInput = document.getElementById(`plan-note-${planId}`);
+      const note = noteInput ? noteInput.value.trim() : '';
+
+      const checkedExercises = sum.items
+        .filter(it => it.entry.checked)
+        .map(it => {
+          const kgTxt = it.rw.kg > 0 ? ` • ${it.rw.isWeightedCali ? '+' : ''}${it.rw.kg} kg` : '';
+          return `✓ ${it.ex.name} — ${it.rw.sets}×${it.rw.reps}${kgTxt} • RPE ${it.rw.rpe} (+${it.rw.pl} PL)`;
+        });
+
+      const now = new Date();
+      const shortDate = now.toLocaleDateString('pl-PL');
+
+      if (isCustom) {
+        plan.executions = (parseInt(plan.executions, 10) || 0) + 1;
+        plan.lastCompleted = shortDate;
+      } else {
+        if (!state.builtinPlanStats[planId]) state.builtinPlanStats[planId] = { executions: 0, lastCompleted: '' };
+        state.builtinPlanStats[planId].executions += 1;
+        state.builtinPlanStats[planId].lastCompleted = shortDate;
+      }
+
+      const reward = {
+        activityId: typeof mapPlanTypeToPreset === 'function' ? mapPlanTypeToPreset(plan.type) : 'gym',
+        activityName: `📋 ${plan.name}`,
+        volume: sum.totalSets,
+        unit: `serii (${sum.totalReps} powt.)`,
+        difficulty: sum.difficulty,
+        diffLabel: sum.diffLabel,
+        diffBadge: sum.diffBadge,
+        rpe: sum.avgRpe,
+        pl: sum.pl,
+        totalXp: sum.totalXp,
+        xp: { ...sum.xp },
+        grade: sum.grade,
+        gradeBadge: sum.gradeBadge
+      };
+
+      state.logs.unshift({
+        id: 'log_' + Date.now(),
+        isoDate: now.toISOString(),
+        date: now.toLocaleString('pl-PL', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }),
+        name: `${plan.name} (${sum.checkedCount}/${sum.totalCount} ćw.)`,
+        type: plan.type || 'Siła',
+        rpe: Math.round(sum.avgRpe) || 8,
+        notes: note,
+        exercises: checkedExercises,
+        reward,
+        fromCustomPlan: isCustom,
+        fromTemplatePlan: !isCustom
+      });
+
+      // Odznacz ćwiczenia na kolejną sesję (zachowując ostatnio wpisane serie, powt., kg i RPE!)
+      const draft = ensurePlanDraft(plan);
+      draft.forEach(item => { item.checked = false; });
+
+      saveState();
+      checkNewTransformationUnlocks(false);
+      renderAll();
+      showToast(
+        `⚡ Zalogowano „${plan.name}”: +${sum.pl} PL (Ranga ${sum.grade}, +${sum.totalXp} XP)!`,
+        'gold',
+        { label: 'Otwórz Dziennik', onClick: () => switchTab('journal') }
+      );
+    }
+
+    // Nadpisanie renderowania karty planu o interaktywną checklistę ćwiczeń
+    renderPlanCardHtml = function (plan, isCustom) {
+      const stats = isCustom
+        ? { executions: plan.executions || 0, lastCompleted: plan.lastCompleted || '' }
+        : (state.builtinPlanStats[plan.id] || { executions: 0, lastCompleted: '' });
+
+      const sum = calculatePlanCheckedSummary(plan);
+      const pid = esc(plan.id);
+
+      const checklistHtml = sum.items.map(({ ex, entry, rw, idx }) => `
+        <div id="plan-row-${pid}-${idx}" class="plan-ex-check-item ${entry.checked ? 'is-done' : ''}">
+          <div class="plan-ex-check-top">
+            <label class="plan-ex-check-label">
+              <input
+                type="checkbox"
+                ${entry.checked ? 'checked' : ''}
+                onchange="togglePlanExerciseCheck('${pid}', ${isCustom}, ${idx}, this.checked)"
+              />
+              <div style="min-width:0;">
+                <div class="plan-ex-title">${esc(ex.name)}</div>
+                <div class="plan-ex-target">Plan: ${esc(ex.sets || '-')}${ex.load ? ` (${esc(ex.load)})` : ''}</div>
+              </div>
+            </label>
+            <span id="plan-ex-pl-${pid}-${idx}" class="badge ${entry.checked ? 'badge-green' : 'badge-purple'}">+${rw.pl} PL</span>
+          </div>
+
+          <div class="plan-ex-inputs">
+            <label class="plan-mini-field">
+              <span>Serie</span>
+              <input
+                type="number"
+                class="plan-mini-input"
+                min="1"
+                max="30"
+                step="1"
+                value="${entry.sets}"
+                oninput="updatePlanExerciseField('${pid}', ${isCustom}, ${idx}, 'sets', this.value)"
+              />
+            </label>
+            <label class="plan-mini-field">
+              <span>Powt.</span>
+              <input
+                type="number"
+                class="plan-mini-input"
+                min="1"
+                max="200"
+                step="1"
+                value="${entry.reps}"
+                oninput="updatePlanExerciseField('${pid}', ${isCustom}, ${idx}, 'reps', this.value)"
+              />
+            </label>
+            <label class="plan-mini-field">
+              <span>RPE (1–10)</span>
+              <input
+                type="number"
+                class="plan-mini-input"
+                min="1"
+                max="10"
+                step="0.5"
+                value="${entry.rpe}"
+                oninput="updatePlanExerciseField('${pid}', ${isCustom}, ${idx}, 'rpe', this.value)"
+              />
+            </label>
+            <label class="plan-mini-field">
+              <span>Ciężar (kg)</span>
+              <input
+                type="number"
+                class="plan-mini-input"
+                min="0"
+                max="500"
+                step="0.5"
+                value="${entry.kg}"
+                oninput="updatePlanExerciseField('${pid}', ${isCustom}, ${idx}, 'kg', this.value)"
+              />
+            </label>
+          </div>
+        </div>
+      `).join('');
+
+      return `
+        <article class="plan-card ${isCustom ? 'custom-plan' : ''}">
+          <div>
+            <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:8px; flex-wrap:wrap; margin-bottom:7px;">
+              <div style="display:flex; flex-wrap:wrap; gap:6px;">
+                ${isCustom ? '<span class="badge badge-gold">⭐ WŁASNY PLAN</span>' : '<span class="badge badge-cyan">📘 PLAN WZORCOWY</span>'}
+                <span class="badge badge-orange">${esc(plan.type || 'Siła')}</span>
+                ${plan.schedule ? `<span class="badge badge-purple">${esc(plan.schedule)}</span>` : ''}
+              </div>
+              <div style="display:flex; gap:5px;">
+                <button type="button" class="btn btn-xs btn-green" onclick="setAllPlanExercisesChecked('${pid}', ${isCustom}, true)">✓ Wszystkie</button>
+                <button type="button" class="btn btn-xs" onclick="setAllPlanExercisesChecked('${pid}', ${isCustom}, false)">↺ Odznacz</button>
+              </div>
+            </div>
+
+            <h3 style="font-family:var(--font-display); font-size:1.08rem; color:#fff; margin-bottom:10px;">${esc(plan.name)}</h3>
+
+            <div class="plan-checklist">${checklistHtml}</div>
+
+            <div id="plan-sum-${pid}" class="plan-live-summary ${sum.checkedCount > 0 ? 'has-checked' : ''}">
+              ${renderPlanSummaryInnerHtml(sum)}
+            </div>
+
+            <input
+              id="plan-note-${pid}"
+              type="text"
+              class="input"
+              style="min-height:36px; padding:7px 10px; font-size:0.8rem; margin-bottom:6px;"
+              placeholder="Notatka do dzisiejszej sesji (opcjonalnie)..."
+            />
+
+            ${plan.notes ? `<div style="font-size:0.78rem; color:var(--text-muted); margin-top:4px;">📝 ${esc(plan.notes)}</div>` : ''}
+          </div>
+
+          <div>
+            <div class="plan-meta-bar" style="margin-bottom:10px;">
+              <span>Wykonano: <strong style="color:var(--scouter-neon);">${stats.executions} razy</strong></span>
+              <span>Ostatnio: <strong style="color:#fff;">${stats.lastCompleted || 'Nigdy'}</strong></span>
+            </div>
+            <div class="plan-actions">
+              <button
+                id="plan-log-btn-${pid}"
+                type="button"
+                class="btn btn-orange"
+                style="flex:1;"
+                onclick="logCheckedPlanWorkout('${pid}', ${isCustom})"
+              >
+                ${sum.checkedCount > 0 ? `⚡ Zaloguj wykonane (${sum.checkedCount}/${sum.totalCount}) • +${sum.pl} PL` : '⚡ Zaloguj ten trening'}
+              </button>
+              ${isCustom ? `
+                <button type="button" class="btn btn-sm btn-cyan" onclick="openPlanCreatorModal('${pid}')">Edytuj</button>
+                <button type="button" class="btn btn-sm btn-danger" onclick="requestDeleteCustomPlan('${pid}')">Usuń</button>
+              ` : `
+                <button type="button" class="btn btn-sm btn-gold" onclick="copyBuiltinPlanToCustom('${pid}')">📋 Klonuj do własnych</button>
+              `}
+            </div>
+          </div>
+        </article>
+      `;
+    };
+
+    // Zachowanie stanu odhaczonych ćwiczeń w pamięci lokalnej i chmurze Supabase
+    const _origNormalizeStateForPlanChecklist = normalizeState;
+    normalizeState = function (raw) {
+      const normalized = _origNormalizeStateForPlanChecklist(raw);
+      normalized.planDrafts = (raw && raw.planDrafts && typeof raw.planDrafts === 'object') ? raw.planDrafts : {};
+      return normalized;
+    };
+
+    window.addEventListener('DOMContentLoaded', () => {
+      restorePlanDraftsFromStorage();
+      renderPlans();
     });
   </script>
 </body>
