@@ -2216,117 +2216,169 @@
           </div>
 
           <form onsubmit="handleManualLogSubmit(event)">
-            <div class="row-2" style="margin-bottom:10px;">
-              <div>
-                <label class="form-label" for="manualActivityPreset">Rodzaj aktywności / Preset</label>
-                <select id="manualActivityPreset" class="select" onchange="applyActivityPreset(this.value)">
-                  <option value="swim">🏊 Basen (długości 25m)</option>
-                  <option value="gym">🏋️ Siłownia / Ciężary (serie)</option>
-                  <option value="cali">🤸 Kalistenika (powtórzenia)</option>
-                  <option value="run">🏃 Bieganie (km)</option>
-                  <option value="bike">🚴 Rower (km)</option>
-                  <option value="combat">🥊 Sporty Walki (rundy 3 min)</option>
-                  <option value="skills">🧘 Skille / OUN (holdy / próby)</option>
-                  <option value="hiit">🔥 HIIT / Interwały (minuty)</option>
-                  <option value="custom">⚡ Własna aktywność</option>
-                </select>
+            <form onsubmit="handleManualLogSubmit(event)">
+              <!-- KROK 1: AKTYWNOŚĆ I RODZAJ ĆWICZENIA -->
+              <div class="row-2" style="margin-bottom:10px;">
+                <div>
+                  <label class="form-label" for="manualActivityPreset">1. Rodzaj aktywności / Preset</label>
+                  <select id="manualActivityPreset" class="select" onchange="applyActivityPreset(this.value)">
+                    <option value="gym" selected>🏋️ Siłownia / Ciężary</option>
+                    <option value="cali">🤸 Kalistenika</option>
+                    <option value="swim">🏊 Basen (długości 25m)</option>
+                    <option value="run">🏃 Bieganie (km)</option>
+                    <option value="bike">🚴 Rower (km)</option>
+                    <option value="combat">🥊 Sporty Walki (rundy 3 min)</option>
+                    <option value="skills">🧘 Skille / OUN (holdy / próby)</option>
+                    <option value="hiit">🔥 HIIT / Interwały (minuty)</option>
+                    <option value="custom">⚡ Własna aktywność</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="form-label" for="manualLogName">Nazwa treningu *</label>
+                  <input id="manualLogName" class="input" required placeholder="np. Podciąganie +kg / Basen"
+                    oninput="manualNameEdited = true" />
+                </div>
               </div>
-              <div>
-                <label class="form-label" for="manualLogName">Nazwa treningu *</label>
-                <input id="manualLogName" class="input" required placeholder="np. Basen 40 długości / Push-Pull" />
-              </div>
-            </div>
 
-            <div class="row-3" style="margin-bottom:8px;">
-              <div>
-                <label class="form-label" for="manualVolume">Objętość / Ilość *</label>
-                <input id="manualVolume" class="input" type="number" step="0.5" min="1" value="40" required
-                  oninput="updateManualRewardPreview()" />
+              <div class="card-deep" style="margin-bottom:12px; border-color:rgba(255, 107, 0, 0.45);">
+                <div
+                  style="display:flex; justify-content:space-between; align-items:center; gap:8px; margin-bottom:8px; flex-wrap:wrap;">
+                  <label class="form-label" style="margin:0; color:var(--orange-bright);">1. Wybierz rodzaj ćwiczenia /
+                    styl (najpierw kliknij)</label>
+                  <button type="button" class="btn btn-xs" onclick="clearSelectedExercises()">Wyczyść</button>
+                </div>
+                <div id="manualExerciseChips" style="display:flex; flex-wrap:wrap; gap:6px;"></div>
               </div>
-              <div>
-                <label class="form-label" for="manualVolumeUnit">Jednostka</label>
-                <input id="manualVolumeUnit" class="input" type="text" value="długości (25m)"
-                  oninput="updateManualRewardPreview()" />
-              </div>
-              <div>
-                <label class="form-label" for="manualDifficulty">Trudność ćwiczenia (1–5)</label>
-                <select id="manualDifficulty" class="select" onchange="updateManualRewardPreview()">
-                  <option value="1">⭐ 1 — Łatwy (×0.75)</option>
-                  <option value="2">⭐⭐ 2 — Umiarkowany (×1.0)</option>
-                  <option value="3" selected>⭐⭐⭐ 3 — Wymagający (×1.35)</option>
-                  <option value="4">🔥 4 — Ciężki Z-Warrior (×1.75)</option>
-                  <option value="5">☄️ 5 — Ekstremalny 100x (×2.25)</option>
-                </select>
-              </div>
-            </div>
 
-            <!-- Szybkie przyciski objętości (np. 10 / 20 / 40 / 60 / 80 / 100 długości dla basenu) -->
-            <div id="manualQuickVolBtns" style="display:flex; flex-wrap:wrap; gap:6px; margin-bottom:10px;"></div>
-            <!-- Panel dodanych kilogramów (dla Siłowni / Ciężarów i Kalisteniki) -->
-            <div id="manualWeightBox" class="card-deep"
-              style="display:none; margin-bottom:10px; border-color:rgba(255, 107, 0, 0.45);">
-              <div
-                style="display:flex; justify-content:space-between; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:6px;">
-                <label id="manualAddedKgLabel" class="form-label" for="manualAddedKg"
-                  style="margin:0; color:var(--orange-bright);">⚖️ Dodane kilogramy / Ciężar (kg)</label>
-                <span id="manualAddedKgBadge" class="badge badge-orange">0 kg (×1.00)</span>
+              <!-- Komunikat przed wyborem ćwiczenia -->
+              <div id="manualStepLockHint" class="empty-state" style="padding:16px 12px; margin-bottom:10px;">
+                <div style="margin-bottom:8px;">👆 Wybierz powyżej <strong>rodzaj ćwiczenia / styl</strong>, aby ustawić
+                  serie, powtórzenia, ciężar i RPE.</div>
+                <button type="button" class="btn btn-xs" onclick="unlockManualParamsWithoutChip()">Wpisz własne
+                  ćwiczenie bez wybierania z listy</button>
               </div>
-              <div style="display:flex; gap:8px; align-items:center; margin-bottom:7px;">
-                <input id="manualAddedKg" class="input" type="number" step="0.5" min="0" max="500" value="0"
-                  placeholder="np. 44" oninput="updateManualRewardPreview()" />
-                <button type="button" class="btn btn-sm" onclick="addManualKgDelta(2.5)">+2.5</button>
-                <button type="button" class="btn btn-sm" onclick="addManualKgDelta(5)">+5</button>
+
+              <!-- KROK 2: PARAMETRY (SERIE, POWTÓRZENIA, CIĘŻAR, TRUDNOŚĆ, RPE) -->
+              <div id="manualParamsStep" style="display:none;">
+                <!-- Tryb Siłownia / Kalistenika: Serie + Powtórzenia -->
+                <div id="manualSetsRepsWrap" style="margin-bottom:10px;">
+                  <div class="row-2" style="margin-bottom:8px;">
+                    <div>
+                      <label class="form-label" for="manualSets">2. Ilość serii *</label>
+                      <input id="manualSets" class="input" type="number" step="1" min="1" max="50" value="4"
+                        oninput="syncAutoSessionName(); updateManualRewardPreview();" />
+                      <div style="display:flex; flex-wrap:wrap; gap:5px; margin-top:6px;">
+                        <button type="button" class="btn btn-xs" onclick="setManualSets(3)">3</button>
+                        <button type="button" class="btn btn-xs" onclick="setManualSets(4)">4</button>
+                        <button type="button" class="btn btn-xs" onclick="setManualSets(5)">5</button>
+                        <button type="button" class="btn btn-xs" onclick="setManualSets(6)">6</button>
+                        <button type="button" class="btn btn-xs" onclick="setManualSets(8)">8</button>
+                        <button type="button" class="btn btn-xs" onclick="setManualSets(12)">12</button>
+                      </div>
+                    </div>
+                    <div>
+                      <label class="form-label" for="manualReps">Ilość powtórzeń *</label>
+                      <input id="manualReps" class="input" type="number" step="1" min="1" max="200" value="8"
+                        oninput="syncAutoSessionName(); updateManualRewardPreview();" />
+                      <div style="display:flex; flex-wrap:wrap; gap:5px; margin-top:6px;">
+                        <button type="button" class="btn btn-xs" onclick="setManualReps(3)">3</button>
+                        <button type="button" class="btn btn-xs" onclick="setManualReps(5)">5</button>
+                        <button type="button" class="btn btn-xs" onclick="setManualReps(8)">8</button>
+                        <button type="button" class="btn btn-xs" onclick="setManualReps(10)">10</button>
+                        <button type="button" class="btn btn-xs" onclick="setManualReps(12)">12</button>
+                        <button type="button" class="btn btn-xs" onclick="setManualReps(15)">15</button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Tryb Kardio / Inne (Basen, Bieg, Rower itd.): Objętość + Jednostka -->
+                <div id="manualVolumeWrap" style="display:none; margin-bottom:10px;">
+                  <div class="row-2" style="margin-bottom:8px;">
+                    <div>
+                      <label class="form-label" for="manualVolume">2. Objętość / Ilość *</label>
+                      <input id="manualVolume" class="input" type="number" step="0.5" min="1" value="40"
+                        oninput="syncAutoSessionName(); updateManualRewardPreview();" />
+                    </div>
+                    <div>
+                      <label class="form-label" for="manualVolumeUnit">Jednostka</label>
+                      <input id="manualVolumeUnit" class="input" type="text" value="długości (25m)"
+                        oninput="syncAutoSessionName(); updateManualRewardPreview();" />
+                    </div>
+                  </div>
+                  <div id="manualQuickVolBtns" style="display:flex; flex-wrap:wrap; gap:6px;"></div>
+                </div>
+
+                <!-- Ciężar roboczy / Dodane kilogramy (dla Siłowni i Kalisteniki) -->
+                <div id="manualWeightBox" class="card-deep"
+                  style="display:none; margin-bottom:10px; border-color:rgba(255, 107, 0, 0.45);">
+                  <div
+                    style="display:flex; justify-content:space-between; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:6px;">
+                    <label id="manualAddedKgLabel" class="form-label" for="manualAddedKg"
+                      style="margin:0; color:var(--orange-bright);">⚖️ Ciężar roboczy / Dodane kilogramy (kg)</label>
+                    <span id="manualAddedKgBadge" class="badge badge-orange">0 kg (×1.00)</span>
+                  </div>
+                  <div style="display:flex; gap:8px; align-items:center; margin-bottom:7px;">
+                    <input id="manualAddedKg" class="input" type="number" step="0.5" min="0" max="500" value="0"
+                      placeholder="np. 20" oninput="updateManualRewardPreview()" />
+                    <button type="button" class="btn btn-sm" onclick="addManualKgDelta(2.5)">+2.5</button>
+                    <button type="button" class="btn btn-sm" onclick="addManualKgDelta(5)">+5</button>
+                  </div>
+                  <div style="display:flex; flex-wrap:wrap; gap:6px;">
+                    <button type="button" class="btn btn-xs" onclick="setManualAddedKg(0)">0 kg</button>
+                    <button type="button" class="btn btn-xs" onclick="setManualAddedKg(10)">+10 kg</button>
+                    <button type="button" class="btn btn-xs" onclick="setManualAddedKg(20)">+20 kg</button>
+                    <button type="button" class="btn btn-xs" onclick="setManualAddedKg(30)">+30 kg</button>
+                    <button type="button" class="btn btn-xs" onclick="setManualAddedKg(40)">+40 kg</button>
+                    <button type="button" class="btn btn-xs" onclick="setManualAddedKg(60)">60 kg</button>
+                    <button type="button" class="btn btn-xs" onclick="setManualAddedKg(80)">80 kg</button>
+                    <button type="button" class="btn btn-xs" onclick="setManualAddedKg(100)">100 kg</button>
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <label class="form-label" for="manualDifficulty">Trudność ćwiczenia (1–5)</label>
+                  <select id="manualDifficulty" class="select" onchange="updateManualRewardPreview()">
+                    <option value="1">⭐ 1 — Łatwy (×0.75)</option>
+                    <option value="2">⭐⭐ 2 — Umiarkowany (×1.0)</option>
+                    <option value="3" selected>⭐⭐⭐ 3 — Wymagający (×1.35)</option>
+                    <option value="4">🔥 4 — Ciężki Z-Warrior (×1.75)</option>
+                    <option value="5">☄️ 5 — Ekstremalny 100x (×2.25)</option>
+                  </select>
+                </div>
+
+                <input type="hidden" id="manualLogType" value="Siła" />
+
+                <div class="form-group">
+                  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+                    <label class="form-label" for="manualLogRpe" style="margin:0;">Odczuwana intensywność (RPE
+                      1–10)</label>
+                    <span id="manualLogRpeVal" class="badge badge-gold">RPE 8 / 10</span>
+                  </div>
+                  <input id="manualLogRpe" type="range" min="1" max="10" value="8"
+                    oninput="document.getElementById('manualLogRpeVal').textContent='RPE '+this.value+' / 10'; updateManualRewardPreview();" />
+                </div>
+
+                <!-- Podgląd nagród Scoutera na żywo -->
+                <div id="manualRewardPreview" class="card-deep"
+                  style="border-color:var(--scouter-border); background:var(--scouter-soft); margin-bottom:12px;"></div>
+
+                <div class="form-group">
+                  <label class="form-label" for="manualLogExercises">Wykonane ćwiczenia / szczegóły (opcjonalnie, jedno
+                    w linii)</label>
+                  <textarea id="manualLogExercises" class="textarea"
+                    placeholder="Uzupełnia się automatycznie po wyborze ćwiczeń powyżej..."></textarea>
+                </div>
+
+                <div class="form-group">
+                  <label class="form-label" for="manualLogNotes">Notatki po treningu</label>
+                  <input id="manualLogNotes" class="input" placeholder="np. Zapas 1–2 powt., dobra kontrola OUN" />
+                </div>
+
+                <button type="submit" class="btn btn-green" style="width:100%;">⚡ Zapisz trening i odbierz XP /
+                  PL</button>
               </div>
-              <div style="display:flex; flex-wrap:wrap; gap:6px;">
-                <button type="button" class="btn btn-xs" onclick="setManualAddedKg(0)">0 kg</button>
-                <button type="button" class="btn btn-xs" onclick="setManualAddedKg(10)">+10 kg</button>
-                <button type="button" class="btn btn-xs" onclick="setManualAddedKg(20)">+20 kg</button>
-                <button type="button" class="btn btn-xs" onclick="setManualAddedKg(30)">+30 kg</button>
-                <button type="button" class="btn btn-xs" onclick="setManualAddedKg(40)">+40 kg</button>
-                <button type="button" class="btn btn-xs" onclick="setManualAddedKg(60)">60 kg</button>
-                <button type="button" class="btn btn-xs" onclick="setManualAddedKg(80)">80 kg</button>
-                <button type="button" class="btn btn-xs" onclick="setManualAddedKg(100)">100 kg</button>
-              </div>
-            </div>
-
-            <input type="hidden" id="manualLogType" value="Kondycja / Hipertrofia" />
-
-            <div class="form-group">
-              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
-                <label class="form-label" for="manualLogRpe" style="margin:0;">Odczuwana intensywność (RPE 1–10)</label>
-                <span id="manualLogRpeVal" class="badge badge-gold">RPE 8 / 10</span>
-              </div>
-              <input id="manualLogRpe" type="range" min="1" max="10" value="8"
-                oninput="document.getElementById('manualLogRpeVal').textContent='RPE '+this.value+' / 10'; updateManualRewardPreview();" />
-            </div>
-
-            <!-- Podgląd nagród Scoutera na żywo -->
-            <div class="form-group">
-              <div
-                style="display:flex; justify-content:space-between; align-items:center; gap:8px; margin-bottom:6px; flex-wrap:wrap;">
-                <label class="form-label" style="margin:0;">Rodzaje ćwiczeń / styl (kliknij, aby dodać — skaluje XP i
-                  PL)</label>
-                <button type="button" class="btn btn-xs" onclick="clearSelectedExercises()">Wyczyść</button>
-              </div>
-              <div id="manualExerciseChips" style="display:flex; flex-wrap:wrap; gap:6px;"></div>
-            </div>
-            <div id="manualRewardPreview" class="card-deep"
-              style="border-color:var(--scouter-border); background:var(--scouter-soft); margin-bottom:12px;"></div>
-
-            <div class="form-group">
-              <label class="form-label" for="manualLogExercises">Wykonane ćwiczenia / styl (opcjonalnie, jedno w
-                linii)</label>
-              <textarea id="manualLogExercises" class="textarea"
-                placeholder="np. Kraul 30 długości + żabka 10 długości&#10;lub Podciąganie +20 kg — 5x5"></textarea>
-            </div>
-
-            <div class="form-group">
-              <label class="form-label" for="manualLogNotes">Notatki po treningu</label>
-              <input id="manualLogNotes" class="input"
-                placeholder="np. Tempo równe, zapas tlenowy, dobra kontrola OUN" />
-            </div>
-
-            <button type="submit" class="btn btn-green" style="width:100%;">⚡ Zapisz trening i odbierz XP / PL</button>
+            </form>
           </form>
         </div>
       </div>
@@ -7164,6 +7216,287 @@
     window.addEventListener('DOMContentLoaded', () => {
       restorePlanDraftsFromStorage();
       renderPlans();
+    });
+    // =========================================================================
+    // 10G. DWUETAPOWE LOGOWANIE W DZIENNIKU (NAJPIERW ĆWICZENIE -> SERIE/POWT./RPE)
+    // =========================================================================
+    let manualSkipExerciseLock = false;
+    let manualNameEdited = false;
+
+    function isSetsRepsPreset(presetId) {
+      return presetId === 'gym' || presetId === 'cali';
+    }
+
+    function syncManualStepVisibility() {
+      const paramsStep = document.getElementById('manualParamsStep');
+      const lockHint = document.getElementById('manualStepLockHint');
+      const setsRepsWrap = document.getElementById('manualSetsRepsWrap');
+      const volWrap = document.getElementById('manualVolumeWrap');
+      const presetId = document.getElementById('manualActivityPreset')?.value || 'gym';
+
+      const unlocked = selectedExerciseIds.length > 0 || manualSkipExerciseLock;
+      if (paramsStep) paramsStep.style.display = unlocked ? 'block' : 'none';
+      if (lockHint) lockHint.style.display = unlocked ? 'none' : 'block';
+
+      const useSetsReps = isSetsRepsPreset(presetId);
+      if (setsRepsWrap) setsRepsWrap.style.display = useSetsReps ? 'block' : 'none';
+      if (volWrap) volWrap.style.display = useSetsReps ? 'none' : 'block';
+    }
+
+    function unlockManualParamsWithoutChip() {
+      manualSkipExerciseLock = true;
+      syncManualStepVisibility();
+      syncAutoSessionName();
+      updateManualRewardPreview();
+    }
+
+    function setManualSets(val) {
+      const inp = document.getElementById('manualSets');
+      if (!inp) return;
+      inp.value = Math.max(1, parseInt(val, 10) || 4);
+      syncAutoSessionName();
+      updateManualRewardPreview();
+    }
+
+    function setManualReps(val) {
+      const inp = document.getElementById('manualReps');
+      if (!inp) return;
+      inp.value = Math.max(1, parseInt(val, 10) || 8);
+      syncAutoSessionName();
+      updateManualRewardPreview();
+    }
+
+    function syncAutoSessionName() {
+      if (manualNameEdited) return;
+      const nameInput = document.getElementById('manualLogName');
+      const presetId = document.getElementById('manualActivityPreset')?.value || 'gym';
+      if (!nameInput) return;
+
+      const preset = ACTIVITY_PRESETS[presetId] || ACTIVITY_PRESETS.custom;
+      const exList = EXERCISE_TYPES_BY_PRESET[presetId] || [];
+      const chosen = exList.filter(x => selectedExerciseIds.includes(x.id));
+      const baseTitle = chosen.length === 1
+        ? chosen[0].label
+        : chosen.length > 1
+          ? `${preset.name} (${chosen.length} ćw.)`
+          : preset.name;
+
+      if (isSetsRepsPreset(presetId)) {
+        const sets = Math.max(1, parseInt(document.getElementById('manualSets')?.value, 10) || 4);
+        const reps = Math.max(1, parseInt(document.getElementById('manualReps')?.value, 10) || 8);
+        nameInput.value = `${baseTitle} — ${sets}×${reps}`;
+      } else {
+        const vol = document.getElementById('manualVolume')?.value || preset.defaultVol;
+        const unit = document.getElementById('manualVolumeUnit')?.value.trim() || preset.unit;
+        nameInput.value = `${baseTitle} — ${vol} ${unit}`;
+      }
+    }
+
+    function computeCurrentManualReward() {
+      const presetId = document.getElementById('manualActivityPreset')?.value || 'gym';
+      const difficulty = parseInt(document.getElementById('manualDifficulty')?.value, 10) || 3;
+      const rpe = parseInt(document.getElementById('manualLogRpe')?.value, 10) || 8;
+      const addedKg = document.getElementById('manualAddedKg')?.value || 0;
+
+      let base;
+      if (isSetsRepsPreset(presetId)) {
+        const sets = Math.max(1, parseInt(document.getElementById('manualSets')?.value, 10) || 4);
+        const reps = Math.max(1, parseInt(document.getElementById('manualReps')?.value, 10) || 8);
+
+        if (presetId === 'gym') {
+          const repFactor = Math.max(0.82, Math.min(1.32, Math.pow(reps / 8, 0.35)));
+          base = calculateSessionReward('gym', sets * repFactor, difficulty, rpe, 'serii');
+          base.volume = sets;
+          base.unit = `serii × ${reps} powt.`;
+        } else {
+          const totalReps = sets * reps;
+          base = calculateSessionReward('cali', totalReps, difficulty, rpe, 'powt.');
+          base.volume = totalReps;
+          base.unit = `powt. (${sets}×${reps})`;
+        }
+
+        // Dopasowanie rozkładu statystyk do zakresu powtórzeń
+        if (reps <= 5) {
+          base.xp.STR = Math.round(base.xp.STR * 1.15);
+          base.xp.CNS = Math.round(base.xp.CNS * 1.12);
+        } else if (reps >= 13) {
+          base.xp.END = Math.round(base.xp.END * 1.22);
+        }
+        base.totalXp = STAT_KEYS.reduce((a, k) => a + (base.xp[k] || 0), 0);
+        base.sets = sets;
+        base.reps = reps;
+      } else {
+        base = calculateSessionReward(
+          presetId,
+          document.getElementById('manualVolume')?.value,
+          difficulty,
+          rpe,
+          document.getElementById('manualVolumeUnit')?.value.trim()
+        );
+      }
+
+      const withEx = applyExerciseModifiersToReward(base, presetId, selectedExerciseIds);
+      const finalReward = applyWeightModifierToReward(withEx, presetId, addedKg);
+      finalReward.totalXp = STAT_KEYS.reduce((a, k) => a + (finalReward.xp[k] || 0), 0);
+      return finalReward;
+    }
+
+    applyActivityPreset = function (presetId) {
+      const p = ACTIVITY_PRESETS[presetId] || ACTIVITY_PRESETS.custom;
+      const volInput = document.getElementById('manualVolume');
+      const unitInput = document.getElementById('manualVolumeUnit');
+      const typeInput = document.getElementById('manualLogType');
+      const quickWrap = document.getElementById('manualQuickVolBtns');
+      const ta = document.getElementById('manualLogExercises');
+      if (!typeInput) return;
+
+      selectedExerciseIds = [];
+      manualSkipExerciseLock = false;
+      manualNameEdited = false;
+
+      if (volInput) volInput.value = p.defaultVol;
+      if (unitInput) unitInput.value = p.unit;
+      typeInput.value = p.type;
+      if (ta) ta.value = '';
+      if (document.getElementById('manualAddedKg')) document.getElementById('manualAddedKg').value = 0;
+
+      if (quickWrap) {
+        quickWrap.innerHTML = p.quick.map(q =>
+          `<button type="button" class="btn btn-xs" onclick="setManualVolume(${q})">${q} ${esc(p.unit.split(' ')[0])}</button>`
+        ).join('');
+      }
+
+      toggleWeightBoxVisibility(presetId);
+      renderExerciseTypeChips(presetId);
+      syncManualStepVisibility();
+      syncAutoSessionName();
+      updateManualRewardPreview();
+    };
+
+    toggleExerciseTypeChip = function (exId) {
+      const presetId = document.getElementById('manualActivityPreset')?.value || 'gym';
+      const list = EXERCISE_TYPES_BY_PRESET[presetId] || EXERCISE_TYPES_BY_PRESET.custom;
+      const item = list.find(x => x.id === exId);
+      if (!item) return;
+
+      const idx = selectedExerciseIds.indexOf(exId);
+      const ta = document.getElementById('manualLogExercises');
+      let lines = ta ? ta.value.split('\n').map(s => s.trim()).filter(Boolean) : [];
+
+      if (idx === -1) {
+        selectedExerciseIds.push(exId);
+        if (!lines.some(l => l.startsWith(item.label))) lines.push(item.label);
+      } else {
+        selectedExerciseIds.splice(idx, 1);
+        lines = lines.filter(l => l !== item.label && !l.startsWith(item.label + ' —'));
+      }
+
+      if (ta) ta.value = lines.join('\n');
+      renderExerciseTypeChips(presetId);
+      syncManualStepVisibility();
+      syncAutoSessionName();
+      updateManualRewardPreview();
+    };
+
+    clearSelectedExercises = function () {
+      const presetId = document.getElementById('manualActivityPreset')?.value || 'gym';
+      const list = EXERCISE_TYPES_BY_PRESET[presetId] || EXERCISE_TYPES_BY_PRESET.custom;
+      const labels = new Set(list.map(x => x.label));
+      const ta = document.getElementById('manualLogExercises');
+      if (ta) {
+        ta.value = ta.value
+          .split('\n')
+          .map(s => s.trim())
+          .filter(line => line && !labels.has(line))
+          .join('\n');
+      }
+      selectedExerciseIds = [];
+      manualSkipExerciseLock = false;
+      manualNameEdited = false;
+      renderExerciseTypeChips(presetId);
+      syncManualStepVisibility();
+      syncAutoSessionName();
+      updateManualRewardPreview();
+    };
+
+    updateManualRewardPreview = function () {
+      const box = document.getElementById('manualRewardPreview');
+      if (!box) return;
+      const r = computeCurrentManualReward();
+
+      const extras = [];
+      if (r.exerciseTags && r.exerciseTags.length) {
+        extras.push(`Wybrane ćwiczenia (×${r.exerciseMult}): <strong style="color:#fff;">${r.exerciseTags.map(esc).join(', ')}</strong>`);
+      }
+      if (r.addedKg > 0) {
+        extras.push(`Obciążenie: <strong style="color:var(--orange-bright);">${r.isWeightedCali ? '+' : ''}${r.addedKg} kg (×${r.weightMult.toFixed(2)})</strong>`);
+      }
+
+      const extraHtml = extras.length
+        ? `<div style="margin-top:8px; padding-top:7px; border-top:1px solid rgba(34,197,94,0.28); font-size:0.74rem; color:#cbd5e1; display:flex; flex-direction:column; gap:3px;">${extras.map(x => `<div>${x}</div>`).join('')}</div>`
+        : '';
+      box.innerHTML = renderRewardPreviewHtml(r) + extraHtml;
+    };
+
+    handleManualLogSubmit = function (e) {
+      e.preventDefault();
+      const name = document.getElementById('manualLogName').value.trim();
+      if (!name) return;
+
+      const activityId = document.getElementById('manualActivityPreset').value;
+      const type = document.getElementById('manualLogType').value;
+      const rpe = parseInt(document.getElementById('manualLogRpe').value, 10) || 8;
+      const notes = document.getElementById('manualLogNotes').value.trim();
+      const reward = computeCurrentManualReward();
+
+      let exercises = document.getElementById('manualLogExercises').value
+        .split('\n')
+        .map(s => s.trim())
+        .filter(Boolean);
+
+      if (isSetsRepsPreset(activityId) && exercises.length) {
+        const sets = Math.max(1, parseInt(document.getElementById('manualSets')?.value, 10) || 4);
+        const reps = Math.max(1, parseInt(document.getElementById('manualReps')?.value, 10) || 8);
+        const kgTxt = reward.addedKg > 0 ? ` (${reward.isWeightedCali ? '+' : ''}${reward.addedKg} kg)` : '';
+        exercises = exercises.map(line =>
+          line.includes('—') ? line : `${line} — ${sets}×${reps}${kgTxt} • RPE ${rpe}`
+        );
+      }
+
+      const now = new Date();
+      state.logs.unshift({
+        id: 'log_' + Date.now(),
+        isoDate: now.toISOString(),
+        date: now.toLocaleString('pl-PL', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }),
+        name,
+        type,
+        rpe,
+        notes,
+        exercises,
+        reward,
+        fromCustomPlan: false,
+        fromTemplatePlan: false
+      });
+
+      selectedExerciseIds = [];
+      manualSkipExerciseLock = false;
+      manualNameEdited = false;
+      document.getElementById('manualLogExercises').value = '';
+      document.getElementById('manualLogNotes').value = '';
+      if (document.getElementById('manualAddedKg')) document.getElementById('manualAddedKg').value = 0;
+
+      renderExerciseTypeChips(activityId);
+      syncManualStepVisibility();
+      syncAutoSessionName();
+      updateManualRewardPreview();
+      saveState();
+      checkNewTransformationUnlocks(false);
+      renderAll();
+      showToast(`⚡ ${name}: +${reward.pl} PL (Ranga ${reward.grade}, +${reward.totalXp} XP)!`, 'gold');
+    };
+
+    window.addEventListener('DOMContentLoaded', () => {
+      applyActivityPreset(document.getElementById('manualActivityPreset')?.value || 'gym');
     });
   </script>
 </body>
